@@ -10,6 +10,9 @@
 7. pip install -r requirements.txt
 ... Setup finished!
 
+# Tutorials
+https://docs.ros.org/en/foxy/Tutorials.html
+
 
 # TO-DO
 - Connect ros machines: https://roboticsbackend.com/ros2-multiple-machines-including-raspberry-pi/
