@@ -9,3 +9,7 @@
 6. colcon build
 7. pip install -r requirements.txt
 ... Setup finished!
+
+
+# TO-DO
+- Connect ros machines: https://roboticsbackend.com/ros2-multiple-machines-including-raspberry-pi/
