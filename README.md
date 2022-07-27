@@ -16,4 +16,4 @@ https://docs.ros.org/en/foxy/Tutorials.html
 
 
 # TO-DO
-- Connect ros machines: https://roboticsbackend.com/ros2-multiple-machines-including-raspberry-pi/
+- [Connect ros machines](https://roboticsbackend.com/ros2-multiple-machines-including-raspberry-pi/)
