@@ -7,5 +7,5 @@
 4. mkdir -p ~/4191_ws/src && cd 4191_ws/ && colcon build 
 5. git clone https://github.com/aprit0/Robot-4191
 6. colcon build
-
+7. pip install -r requirements.txt
 ... Setup finished!
