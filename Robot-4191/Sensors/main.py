@@ -16,36 +16,8 @@ import matplotlib.pyplot as plt
 from scipy import interpolate
 
 from localmap import localmap
-pose=[0.0,0.0,0.0]
-#***********************************************************************
-def handle_robot_pose(parent, child, pose):
-    br = tf.TransformBroadcaster()
-    br.sendTransform((pose[0], pose[1], 0), tf.transformations.quaternion_from_euler(0, 0, pose[2]), rospy.Time.now(), child,parent)
 
-#***********************************************************************
-def odometryCb(msg):
-    global pose
-    x=msg.pose.pose.position.x
-    y=msg.pose.pose.position.y
-    q0 = msg.pose.pose.orientation.w
-    q1 = msg.pose.pose.orientation.x
-    q2 = msg.pose.pose.orientation.y
-    q3 = msg.pose.pose.orientation.z
-    theta=atan2(2*(q0*q3+q1*q2),1-2*(q2*q2+q3*q3))
-    pose=[x,y,theta]
 
-#*********************************************************************** 
-def scanCb(msg):
-    print(pose)
-    py,px=[],[]
-    scandata=msg.ranges
-    angle_min=msg.angle_min
-    angle_max=msg.angle_max
-    angle_increment=msg.angle_increment
-    range_min=msg.range_min
-    range_max=msg.range_max 
-    m.updatemap(scandata,angle_min,angle_max,angle_increment,range_min,range_max,pose)
-    handle_robot_pose("map", "odom", pose)
 
 #***********************************************************************    
 def mappublisher(m,height, width, resolution,morigin):
@@ -59,19 +31,63 @@ def mappublisher(m,height, width, resolution,morigin):
     msg.data=m  
     mappub.publish(msg)
 
-if __name__ == "__main__":
 
-    rospy.init_node('main', anonymous=True) #make node 
-    rospy.Subscriber('/odom',Odometry,odometryCb)
-    rospy.Subscriber("/scan", LaserScan, scanCb)
-    mappub= rospy.Publisher('/map',OccupancyGrid,queue_size=1)
 
-    rate = rospy.Rate(10) # 100hz   
+ class Laser(Node):
 
-    height, width, resolution=10,10,0.05
-    morigin=[width/2.0,height/2.0]
-    m=localmap(height, width, resolution,morigin)
+    def __init__(self):
+        super().__init__('laser')
+        self.publisher_ = self.create_publisher(LaserScan, '/laser/scan', 10)
+        timer_period = 0.25  # seconds
+        self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.lidar = LidarX2("/dev/ttyUSB0")
+        self.i = 0
+        if not self.lidar.open():
+            print("Cannot open lidar")
+        self.height, self.width, self.resolution=10,10,0.05
+        self.morigin=[width/2.0,height/2.0]
+        self.m=localmap(height, width, resolution,morigin)
+        self.pose=[0.0,0.0,0.0]
 
-    while not rospy.is_shutdown():
-        mappublisher(m.localmap,height, width, resolution,morigin)
-        rate.sleep()
+    def timer_callback(self):
+        lidar_measurements = self.lidar.getMeasures()
+        if len(lidar_measurements) > 0:
+            distances = []
+            angles = []
+            for point in lidar_measurements:
+                angles.append(point.angle)
+                distances.append(0.001 * point.distance)
+            self.m.updatemap(distances,
+                             0,                     # Min angle
+                             3.1415,                # Max angle
+                             3.1415/len(distances), # Angle increment
+                             0.01,                  # Min dist
+                             20,                    # Max dist
+                             self.pose)
+            
+            msg = OccupancyGrid()
+            msg.header.frame_id='map'
+            msg.info.resolution = self.resolution
+            msg.info.width      = math.ceil(self.width/self.resolution)
+            msg.info.height     = math.ceil(self.height/self.resolution)
+            msg.info.origin.position.x=-self.morigin[0]
+            msg.info.origin.position.y=-self.morigin[1]
+            msg.data=self.m  
+            self.publisher_.publish(msg)
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    laser_node = Laser()
+
+    rclpy.spin(laser_node)
+
+    # Destroy the node explicitly
+    # (optional - otherwise it will be done automatically
+    # when the garbage collector destroys the node object)
+    minimal_publisher.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
