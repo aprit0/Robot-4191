@@ -1,24 +1,24 @@
 #!/usr/bin/env python
-import rospy
-import roslib
+#import rospy
+#import roslib
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
 from nav_msgs.msg import OccupancyGrid
-import tf
+# import tf
 import math
 from math import sin, cos, pi,tan, atan2
 import numpy as np
-from pylab import *
-from itertools import groupby
-from operator import itemgetter
-import matplotlib.pyplot as plt
-from scipy import interpolate
+#from pylab import *
+#from itertools import groupby
+#from operator import itemgetter
+#import matplotlib.pyplot as plt
+#from scipy import interpolate
 
 from localmap import localmap
 
 
-
+'''
 #***********************************************************************    
 def mappublisher(m,height, width, resolution,morigin):
     msg = OccupancyGrid()
@@ -30,10 +30,10 @@ def mappublisher(m,height, width, resolution,morigin):
     msg.info.origin.position.y=-morigin[1]
     msg.data=m  
     mappub.publish(msg)
+'''
 
 
-
- class Laser(Node):
+class Laser(Node):
 
     def __init__(self):
         super().__init__('laser')

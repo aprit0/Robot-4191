@@ -3,8 +3,8 @@ from math import sin, cos, pi,tan, atan2,log
 import math
 from itertools import groupby
 from operator import itemgetter
-import tf
-import rospy
+#import tf
+#import rospy
 import numpy as np
 from geometry_msgs.msg import TransformStamped
 from geometry_msgs.msg import PointStamped
