@@ -30,10 +30,10 @@ class Laser(Node):
             msg = LaserScan()
             msg.header.stamp = self.get_clock().now().to_msg()
             msg.header.frame_id = 'laser'
-            msg.angle_min = -3.1415
-            msg.angle_max = 3.1415
+            msg.angle_min = -3.1415/2
+            msg.angle_max = 3.1415/2
             msg.angle_increment = 3.1415/len(angles)
-            msg.time_increment = 0.0
+            msg.time_increment = 0.01
             msg.scan_time = 0.25
             msg.range_min = 0.0 
             msg.range_max = 32.0
