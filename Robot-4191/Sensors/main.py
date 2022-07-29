@@ -36,7 +36,7 @@ def odometryCb(msg):
 
 #*********************************************************************** 
 def scanCb(msg):
-    print pose
+    print(pose)
     py,px=[],[]
     scandata=msg.ranges
     angle_min=msg.angle_min

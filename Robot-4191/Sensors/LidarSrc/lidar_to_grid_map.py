@@ -9,7 +9,6 @@ author: Erno Horvath, Csaba Hajdu based on Atsushi Sakai's scripts
 import math
 from collections import deque
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 EXTEND_AREA = 0
@@ -113,7 +112,7 @@ def init_flood_fill(center_point, obstacle_points, xy_points, min_coord,
     ox, oy = obstacle_points
     xw, yw = xy_points
     min_x, min_y = min_coord
-    occupancy_map = (np.ones((xw, yw))) * 0.5
+    occupancy_map = (np.ones((xw, yw))) * 50
     for (x, y) in zip(ox, oy):
         # x coordinate of the the occupied area
         ix = int(round((x - min_x) / xy_resolution))
@@ -150,22 +149,22 @@ def flood_fill(center_point, occupancy_map):
         nx, ny = n
         # West
         if nx > 0:
-            if occupancy_map[nx - 1, ny] == 0.5:
+            if occupancy_map[nx - 1, ny] == 50:
                 occupancy_map[nx - 1, ny] = 0.0
                 fringe.appendleft((nx - 1, ny))
         # East
         if nx < sx - 1:
-            if occupancy_map[nx + 1, ny] == 0.5:
+            if occupancy_map[nx + 1, ny] == 50:
                 occupancy_map[nx + 1, ny] = 0.0
                 fringe.appendleft((nx + 1, ny))
         # North
         if ny > 0:
-            if occupancy_map[nx, ny - 1] == 0.5:
+            if occupancy_map[nx, ny - 1] == 50:
                 occupancy_map[nx, ny - 1] = 0.0
                 fringe.appendleft((nx, ny - 1))
         # South
         if ny < sy - 1:
-            if occupancy_map[nx, ny + 1] == 0.5:
+            if occupancy_map[nx, ny + 1] == 50:
                 occupancy_map[nx, ny + 1] = 0.0
                 fringe.appendleft((nx, ny + 1))
 
@@ -179,7 +178,7 @@ def generate_ray_casting_grid_map(ox, oy, xy_resolution, breshen=True, map_size 
         ox, oy, xy_resolution, map_size)
     print(x_w,y_w)
     # default 0.5 -- [[0.5 for i in range(y_w)] for i in range(x_w)]
-    occupancy_map = np.ones((x_w, y_w)) / 2
+    occupancy_map = np.ones((x_w, y_w), dtype=int)
     center_x = int(round(x_w/2))#int(round(x_w*  / xy_resolution))  # center x coordinate of the grid map
     center_y = int(round(y_w/2))#int((-min_y/ xy_resolution))  # center y coordinate of the grid map
     # occupancy grid computed with bresenham ray casting
