@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Path, OccupancyGrid
 import numpy as np
+import time
 
 '''
 Path planner
@@ -27,47 +28,37 @@ class PathPlanner(Node):
         timer_period = 0.25  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.pose = [0.0,0.0,0.0]
-        self.goal = [1.0, 1.0, 0.0]
+        self.goal = [1.0, 1.0]
+        self.path = []
+        self.planner_timeout = 0.5
 
     def listener_callback(self, msg):
         map = msg.data # type: class: array.array
         size = int(np.shape(map)[0] ** 0.5)
         map_arr = np.reshape(map, (size,size))
         print(type(map), np.shape(map), map_arr.shape)
-        path = astar(map_arr, (0, 0), (100,100))
-        print('PATH: ', path)
+        t_0 = time.time()
+        waypoints = astar(map_arr, (0, 0), (100,100), self.timeout)
+        if waypoints == None or waypoints == []:
+            print('Invalid path')
+            self.path = []
+        else:
+            print('Path calculated in: ', time.time() - t_0)   
+            self.path = waypoints
+        print('PATH: ', self.path)
 
 
     def timer_callback(self):
-        '''
-        msg = Path()
-        msg.header.frame_id = 'path'
-        msg.data = []
-        self.publisher_.publish(msg)
-        '''
-        pass
+        if len(self.path) > 0:
+            msg = Path()
+            msg.header.frame_id = 'path'
+            msg.data = self.path
+            self.publisher_.publish(msg)
 
 def main(args=None):
-    '''
-    maze = [[0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
-    start = (0, 0)
-    end = (7, 6)
-    path = astar(maze, start, end)
-    print(path)
-    '''
     rclpy.init(args=args)
 
     path_planner = PathPlanner()
-
     rclpy.spin(path_planner)
 
     # Destroy the node explicitly
@@ -77,7 +68,7 @@ def main(args=None):
     rclpy.shutdown()
 
 
-def astar(maze, start, end):
+def astar(maze, start, end, timeout=0.2):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
 
     # Create start and end node
@@ -95,6 +86,9 @@ def astar(maze, start, end):
 
     # Loop until you find the end
     while len(open_list) > 0:
+        if time.time() - t_0 > timeout:
+            print('timeout', time.time() - t_0)
+            return []
 
         # Get the current node
         current_node = open_list[0]
