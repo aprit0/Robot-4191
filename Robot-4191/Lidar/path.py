@@ -41,7 +41,7 @@ class PathPlanner(Node):
         self.publisher_.publish(msg)
 
 
-def main():
+def main(args=None):
     '''
     maze = [[0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
