@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Path, OccupancyGrid
+from geometry_msgs.msg import PoseStamped
 import numpy as np
 import time
 
@@ -43,9 +44,14 @@ class PathPlanner(Node):
             print('Invalid path')
             self.path = []
         else:
-            print('Path calculated in: ', time.time() - t_0)   
-            self.path = waypoints
+            print('Path calculated in: ', time.time() - t_0)
+            for point in waypoints:
+                pose = PoseStamped()
+                pose.pose.position.x = point[0]
+                pose.pose.position.x = point[0]
+                self.path.append(pose)
         print('PATH: ', self.path)
+
 
 
     def timer_callback(self):
