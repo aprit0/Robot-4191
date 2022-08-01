@@ -1,4 +1,4 @@
-import bresenham
+from  LidarSrc import bresenham
 from math import sin, cos, log
 import math
 #import tf
@@ -11,7 +11,7 @@ class localmap:
         self.height=height
         self.width=width
         self.resolution=resolution
-        self.punknown=-int(1)
+        self.punknown=int(10)
         self.localmap=np.array([self.punknown]*int(self.width/self.resolution)*int(self.height/self.resolution), dtype=int)
         self.logodds=[0.0]*int(self.width/self.resolution)*int(self.height/self.resolution)
         self.origin=int(math.ceil(morigin[0]/resolution))+int(math.ceil(width/resolution)*math.ceil(morigin[1]/resolution))

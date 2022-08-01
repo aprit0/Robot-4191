@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Path, OccupancyGrid
+import numpy as np
 
 '''
 Path planner
@@ -29,17 +30,22 @@ class PathPlanner(Node):
         self.goal = [1.0, 1.0, 0.0]
 
     def listener_callback(self, msg):
-        map = msg.data
-        print(type(map), map.shape)
-        # astar(maze, start, end)
+        map = msg.data # type: class: array.array
+        size = int(np.shape(map)[0] ** 0.5)
+        map_arr = np.reshape(map, (size,size))
+        print(type(map), np.shape(map), map_arr.shape)
+        path = astar(map_arr, (0, 0), (100,100))
+        print('PATH: ', path)
 
 
     def timer_callback(self):
+        '''
         msg = Path()
         msg.header.frame_id = 'path'
         msg.data = []
         self.publisher_.publish(msg)
-
+        '''
+        pass
 
 def main(args=None):
     '''
