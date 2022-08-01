@@ -1,13 +1,10 @@
 import bresenham
-from math import sin, cos, pi,tan, atan2,log
+from math import sin, cos, log
 import math
-from itertools import groupby
-from operator import itemgetter
 #import tf
 #import rospy
 import numpy as np
-from geometry_msgs.msg import TransformStamped
-from geometry_msgs.msg import PointStamped
+
 
 class localmap:
     def __init__(self, height, width, resolution,morigin):
@@ -42,7 +39,7 @@ class localmap:
                 px=int(float(scandata[i][1])*cos(beta-pose[2])/self.resolution)
                 py=int(float(scandata[i][1])*sin(beta-pose[2])/self.resolution)
 
-                l = bresenham.bresenham([0,0],[px,py])
+                l = bresenham.bresenham([0, 0], [px, py])
                 for j in range(len(l.path)):                    
                     lpx=self.map_origin[0]+pose[0]+l.path[j][0]*self.resolution
                     lpy=self.map_origin[1]+pose[1]+l.path[j][1]*self.resolution
