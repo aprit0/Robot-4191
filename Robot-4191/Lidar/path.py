@@ -30,7 +30,7 @@ class PathPlanner(Node):
         self.pose = [0.0,0.0,0.0]
         self.goal = [1.0, 1.0]
         self.path = []
-        self.planner_timeout = 0.5
+        self.timeout = 10
 
     def listener_callback(self, msg):
         map = msg.data # type: class: array.array
@@ -38,7 +38,7 @@ class PathPlanner(Node):
         map_arr = np.reshape(map, (size,size))
         print(type(map), np.shape(map), map_arr.shape)
         t_0 = time.time()
-        waypoints = astar(map_arr, (0, 0), (100,100), self.timeout)
+        waypoints = astar(map_arr, (0, 0), (10,10), self.timeout)
         if waypoints == None or waypoints == []:
             print('Invalid path')
             self.path = []
@@ -52,7 +52,7 @@ class PathPlanner(Node):
         if len(self.path) > 0:
             msg = Path()
             msg.header.frame_id = 'path'
-            msg.data = self.path
+            msg.poses = self.path
             self.publisher_.publish(msg)
 
 def main(args=None):
@@ -70,6 +70,7 @@ def main(args=None):
 
 def astar(maze, start, end, timeout=0.2):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
+    print(maze)
 
     # Create start and end node
     start_node = Node(None, start)
@@ -84,6 +85,7 @@ def astar(maze, start, end, timeout=0.2):
     # Add the start node
     open_list.append(start_node)
 
+    t_0 = time.time()
     # Loop until you find the end
     while len(open_list) > 0:
         if time.time() - t_0 > timeout:
@@ -124,7 +126,7 @@ def astar(maze, start, end, timeout=0.2):
                 continue
 
             # Make sure walkable terrain
-            if maze[node_position[0]][node_position[1]] != 0:
+            if maze[node_position[0]][node_position[1]] >= 100:
                 continue
 
             # Create new node
