@@ -14,8 +14,8 @@ class localmap:
         self.height=height
         self.width=width
         self.resolution=resolution
-        self.punknown=-1.0
-        self.localmap=[self.punknown]*int(self.width/self.resolution)*int(self.height/self.resolution)
+        self.punknown=-int(1)
+        self.localmap=np.array([self.punknown]*int(self.width/self.resolution)*int(self.height/self.resolution), dtype=int)
         self.logodds=[0.0]*int(self.width/self.resolution)*int(self.height/self.resolution)
         self.origin=int(math.ceil(morigin[0]/resolution))+int(math.ceil(width/resolution)*math.ceil(morigin[1]/resolution))
         self.pfree=log(0.3/0.7)
@@ -28,15 +28,19 @@ class localmap:
 
 
 
-    def updatemap(self,scandata,angle_min,angle_max,angle_increment,range_min,range_max,pose):
+    def updatemap(self,scandata,range_min,range_max,pose):
+        # scandata[[angle, distance], ... ]
 
+        self.localmap=np.array([self.punknown]*int(self.width/self.resolution)*int(self.height/self.resolution), dtype=int)
         robot_origin=int(pose[0])+int(math.ceil(self.width/self.resolution)*pose[1])
         centreray=len(scandata)/2+1
+        print(scandata[0])
         for i in range(len(scandata)):
-            if not math.isnan(scandata[i]):
-                beta=(i-centreray)*angle_increment
-                px=int(float(scandata[i])*cos(beta-pose[2])/self.resolution)
-                py=int(float(scandata[i])*sin(beta-pose[2])/self.resolution)
+            if not math.isnan(scandata[i][0]):
+                #beta=(i-centreray)*angle_increment
+                beta = scandata[i][0]
+                px=int(float(scandata[i][1])*cos(beta-pose[2])/self.resolution)
+                py=int(float(scandata[i][1])*sin(beta-pose[2])/self.resolution)
 
                 l = bresenham.bresenham([0,0],[px,py])
                 for j in range(len(l.path)):                    
@@ -45,12 +49,12 @@ class localmap:
 
                     if (0<=lpx<self.width and 0<=lpy<self.height):
                         index=self.origin+int(l.path[j][0]+math.ceil(self.width/self.resolution)*l.path[j][1])
-                        if scandata[i]<self.max_scan_range*range_max:
+                        if scandata[i][1]<self.max_scan_range*range_max:
                             if(j<len(l.path)-1):self.logodds[index]+=self.pfree
                             else:self.logodds[index]+=self.pocc
                         else:self.logodds[index]+=self.pfree                        
                         if self.logodds[index]>self.max_logodd:self.logodds[index]=self.max_logodd
                         elif self.logodds[index]<-self.max_logodd:self.logodds[index]=-self.max_logodd
-                        if self.logodds[index]>self.max_logodd_belief:self.localmap[index]=100
-                        else:self.localmap[index]=0 
-                        self.localmap[self.origin]=100.0
+                        if self.logodds[index]>self.max_logodd_belief:self.localmap[index]=int(100)
+                        else:self.localmap[index]=int(0) 
+                        self.localmap[self.origin]=int(100)

@@ -16,7 +16,7 @@ import numpy as np
 #from scipy import interpolate
 
 from localmap import localmap
-
+from LidarSrc.LidarX2 import LidarX2
 
 '''
 #***********************************************************************    
@@ -37,7 +37,7 @@ class Laser(Node):
 
     def __init__(self):
         super().__init__('laser')
-        self.publisher_ = self.create_publisher(LaserScan, '/laser/scan', 10)
+        self.publisher_ = self.create_publisher(OccupancyGrid, '/laser/scan', 10)
         timer_period = 0.25  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.lidar = LidarX2("/dev/ttyUSB0")
@@ -45,8 +45,9 @@ class Laser(Node):
         if not self.lidar.open():
             print("Cannot open lidar")
         self.height, self.width, self.resolution=10,10,0.05
-        self.morigin=[width/2.0,height/2.0]
-        self.m=localmap(height, width, resolution,morigin)
+        self.min_distance = 0.05 # distance from the lidar to ignore
+        self.morigin=[self.width/2.0,self.height/2.0]
+        self.m=localmap(self.height, self.width, self.resolution,self.morigin)
         self.pose=[0.0,0.0,0.0]
 
     def timer_callback(self):
@@ -55,16 +56,18 @@ class Laser(Node):
             distances = []
             angles = []
             for point in lidar_measurements:
-                angles.append(point.angle)
-                distances.append(0.001 * point.distance)
-            self.m.updatemap(distances,
-                             0,                     # Min angle
-                             3.1415,                # Max angle
-                             3.1415/len(distances), # Angle increment
+                dist = point.distance
+                if dist > self.min_distance:
+                    angles.append(point.angle * 3.1415 / 180)
+                    distances.append(0.001 * point.distance)
+            print(len(distances))
+            self.m.updatemap(list(zip(angles,distances)),
                              0.01,                  # Min dist
                              20,                    # Max dist
                              self.pose)
-            
+            data = list(self.m.localmap)
+            print(self.m.localmap)
+            print(type(self.m.localmap))
             msg = OccupancyGrid()
             msg.header.frame_id='map'
             msg.info.resolution = self.resolution
@@ -72,7 +75,7 @@ class Laser(Node):
             msg.info.height     = math.ceil(self.height/self.resolution)
             msg.info.origin.position.x=-self.morigin[0]
             msg.info.origin.position.y=-self.morigin[1]
-            msg.data=self.m  
+            msg.data = [int(i) for i in data]  
             self.publisher_.publish(msg)
 
 def main(args=None):
