@@ -61,7 +61,7 @@ class Laser(Node):
                              20,                    # Max dist
                              self.pose)
             data = list(self.m.localmap)
-            print(self.m.localmap)
+            #print(self.m.localmap)
             print(type(self.m.localmap))
             msg = OccupancyGrid()
             msg.header.frame_id='map'

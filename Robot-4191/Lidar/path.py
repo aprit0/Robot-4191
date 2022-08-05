@@ -1,7 +1,8 @@
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Path, OccupancyGrid
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Point, Quaternion, Pose, PoseStamped
+from std_msgs.msg import Header
 import numpy as np
 import time
 
@@ -25,41 +26,48 @@ class PathPlanner(Node):
             '/map/occupancy',
             self.listener_callback,
             10)
-        self.subscription
+        # self.subscription
         timer_period = 0.25  # seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback)
-        self.pose = [0.0,0.0,0.0]
+        # self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.pose = [0.0, 0.0, 0.0]
         self.goal = [1.0, 1.0]
         self.path = []
         self.timeout = 10
+        self.path = Path()
 
     def listener_callback(self, msg):
-        map = msg.data # type: class: array.array
+        print('msg received')
+        map = msg.data  # type: class: array.array
         size = int(np.shape(map)[0] ** 0.5)
-        map_arr = np.reshape(map, (size,size))
+        map_arr = np.reshape(map, (size, size))
         print(type(map), np.shape(map), map_arr.shape)
         t_0 = time.time()
-        waypoints = astar(map_arr, (0, 0), (10,10), self.timeout)
+        waypoints = astar(map_arr, (0, 0), (10, 10), self.timeout)
         if waypoints == None or waypoints == []:
             print('Invalid path')
-            self.path = []
         else:
             print('Path calculated in: ', time.time() - t_0)
-            for point in waypoints:
-                pose = PoseStamped()
-                pose.pose.position.x = point[0]
-                pose.pose.position.x = point[0]
-                self.path.append(pose)
-        print('PATH: ', self.path)
-
-
+            self.generate_path(waypoints)
+            print('PATH: ', len(self.path.poses))
+            self.timer_callback()
 
     def timer_callback(self):
-        if len(self.path) > 0:
-            msg = Path()
-            msg.header.frame_id = 'path'
-            msg.poses = self.path
-            self.publisher_.publish(msg)
+        print('pub_path')
+        self.publisher_.publish(self.path)
+    
+    def generate_path(self, waypoints):
+        # waypoints = [(i,2*i) for i in range(5)]
+        new_path = Path()
+        new_path.header.frame_id = 'map'
+        for way in waypoints:
+            pose_stamped = PoseStamped()
+            pose_stamped.header.frame_id = 'map'
+            pose_stamped.pose.position.x = float(way[0])
+            pose_stamped.pose.position.y = float(way[1])
+            pose_stamped.pose.position.z = float(0.0)
+
+            new_path.poses.append(pose_stamped)
+        self.path = new_path
 
 def main(args=None):
     rclpy.init(args=args)
@@ -67,9 +75,6 @@ def main(args=None):
     path_planner = PathPlanner()
     rclpy.spin(path_planner)
 
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
     path_planner.destroy_node()
     rclpy.shutdown()
 
@@ -162,6 +167,8 @@ def astar(maze, start, end, timeout=0.2):
 
             # Add the child to the open list
             open_list.append(child)
+
+
 class Node():
     """A node class for A* Pathfinding"""
 
