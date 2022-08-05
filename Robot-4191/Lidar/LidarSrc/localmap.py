@@ -1,4 +1,4 @@
-from  LidarSrc import bresenham
+from Lidar.LidarSrc import bresenham
 from math import sin, cos, log
 import math
 #import tf
@@ -31,7 +31,7 @@ class localmap:
         self.localmap=np.array([self.punknown]*int(self.width/self.resolution)*int(self.height/self.resolution), dtype=int)
         robot_origin=int(pose[0])+int(math.ceil(self.width/self.resolution)*pose[1])
         centreray=len(scandata)/2+1
-        print(scandata[0])
+        # print(scandata[0])
         for i in range(len(scandata)):
             if not math.isnan(scandata[i][0]):
                 #beta=(i-centreray)*angle_increment
@@ -53,5 +53,5 @@ class localmap:
                         if self.logodds[index]>self.max_logodd:self.logodds[index]=self.max_logodd
                         elif self.logodds[index]<-self.max_logodd:self.logodds[index]=-self.max_logodd
                         if self.logodds[index]>self.max_logodd_belief:self.localmap[index]=int(100)
-                        else:self.localmap[index]=int(0) 
+                        else:self.localmap[index]=int(1) 
                         self.localmap[self.origin]=int(100)

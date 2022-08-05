@@ -5,6 +5,7 @@ from geometry_msgs.msg import Point, Quaternion, Pose, PoseStamped
 from std_msgs.msg import Header
 import numpy as np
 import time
+import pyastar2d
 
 '''
 Path planner
@@ -27,7 +28,7 @@ class PathPlanner(Node):
             self.listener_callback,
             10)
         # self.subscription
-        timer_period = 0.25  # seconds
+        timer_period = 5  # seconds
         # self.timer = self.create_timer(timer_period, self.timer_callback)
         self.pose = [0.0, 0.0, 0.0]
         self.goal = [1.0, 1.0]
@@ -42,8 +43,9 @@ class PathPlanner(Node):
         map_arr = np.reshape(map, (size, size))
         print(type(map), np.shape(map), map_arr.shape)
         t_0 = time.time()
-        waypoints = astar(map_arr, (0, 0), (10, 10), self.timeout)
-        if waypoints == None or waypoints == []:
+        #waypoints = astar(map_arr, (0, 0), (50, 151), self.timeout)
+        waypoints = pyastar2d.astar_path(np.float32(map_arr), (0, 0), (50, 151), allow_diagonal=True)
+        if len(waypoints.shape) < 2:
             print('Invalid path')
         else:
             print('Path calculated in: ', time.time() - t_0)
@@ -62,8 +64,8 @@ class PathPlanner(Node):
         for way in waypoints:
             pose_stamped = PoseStamped()
             pose_stamped.header.frame_id = 'map'
-            pose_stamped.pose.position.x = float(way[0])
-            pose_stamped.pose.position.y = float(way[1])
+            pose_stamped.pose.position.x = float(0.05 * way[0])
+            pose_stamped.pose.position.y = float(0.05 * way[1])
             pose_stamped.pose.position.z = float(0.0)
 
             new_path.poses.append(pose_stamped)

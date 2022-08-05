@@ -37,7 +37,7 @@ def bresenham(start, end):
     Bresenham's Line Algorithm
     Produces a np.array from start and end (original from roguebasin.com)
     >>> points1 = bresenham((4, 4), (6, 10))
-    >>> print(points1)
+    # print(points1)
     np.array([[4,4], [4,5], [5,6], [5,7], [5,8], [6,9], [6,10]])
     """
     # setup initial conditions

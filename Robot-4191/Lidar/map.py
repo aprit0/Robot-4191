@@ -4,29 +4,10 @@ from rclpy.node import Node
 from nav_msgs.msg import OccupancyGrid
 # import tf
 import math
-#from pylab import *
-#from itertools import groupby
-#from operator import itemgetter
-#import matplotlib.pyplot as plt
-#from scipy import interpolate
 
 from LidarSrc.localmap import localmap
 from LidarSrc.LidarX2 import LidarX2
-
-'''
-#***********************************************************************    
-def mappublisher(m,height, width, resolution,morigin):
-    msg = OccupancyGrid()
-    msg.header.frame_id='map'
-    msg.info.resolution = resolution
-    msg.info.width      = math.ceil(width/resolution)
-    msg.info.height     = math.ceil(height/resolution)
-    msg.info.origin.position.x=-morigin[0]
-    msg.info.origin.position.y=-morigin[1]
-    msg.data=m  
-    mappub.publish(msg)
-'''
-
+from .config import map_resolution
 
 class Laser(Node):
 
@@ -39,7 +20,7 @@ class Laser(Node):
         self.i = 0
         if not self.lidar.open():
             print("Cannot open lidar")
-        self.height, self.width, self.resolution=10,10,0.05
+        self.height, self.width, self.resolution=10,10,map_resolution
         self.min_distance = 0.05 # distance from the lidar to ignore
         self.morigin=[self.width/2.0,self.height/2.0]
         self.m=localmap(self.height, self.width, self.resolution,self.morigin)
