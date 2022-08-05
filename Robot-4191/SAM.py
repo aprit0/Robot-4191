@@ -28,7 +28,7 @@ class SAM(Node):
 
     def __init__(self):
         super().__init__('sam')
-        self.sub_goal = self.create_subscription(Point,
+        self.sub_goal = self.create_subscription(PoseStamped,
                                                  '/goal', self.update_goal, 10)
         self.sub_pose = self.create_subscription(Odometry,
                                                  '/robot/odom', self.update_odom, 10)
@@ -45,7 +45,7 @@ class SAM(Node):
         # Setup map
         self.map_dimension, self.map_resolution = map_dimension, map_resolution
         self.min_distance = 0.05  # distance from the lidar to ignore
-        self.morigin = [self.map_dimension / 2.0, self.map_dimension / 2.0]
+        self.morigin = [int(self.map_dimension / 2.0), int(self.map_dimension / 2.0)]
         self.m = localmap(self.map_dimension, self.map_dimension, self.map_resolution, self.morigin)
 
         # Setup path
@@ -55,6 +55,7 @@ class SAM(Node):
         self.pose = [0.0, 0.0, 0.0]  # x, y, theta
         self.vel = [0.0, 0.0, 0.0]  # dx, dy, dtheta
         self.goal = [0.0, 0.0]  # x, y
+
 
     def update_goal(self, msg):
         self.goal[0] = msg.pose.position.x
@@ -100,22 +101,39 @@ class SAM(Node):
         size = int(len(map) ** 0.5)
         map_arr = np.reshape(map, (size, size))
         print(type(map), np.shape(map), map_arr.shape)
-        waypoints = pyastar2d.astar_path(np.float32(map_arr), (0, 0), (50, 151), allow_diagonal=True)
+        pixel_x, pixel_y = self.pose_to_pixel(self.goal)
+        origin_x, origin_y = [int(i / self.map_resolution) for i in self.morigin]
+        print(origin_x, origin_y, pixel_x, pixel_y)
+        waypoints = pyastar2d.astar_path(np.float32(map_arr), (pixel_x, pixel_y),(origin_x, origin_y),  allow_diagonal=True)
         if len(waypoints.shape) < 2:
             print('Invalid path')
         else:
             self.generate_path(waypoints)
             self.pub_path.publish(self.path)
 
+    def pose_to_pixel(self, pose):
+        # pose maps from - map_dimension : map_dimension
+        map = lambda old_value, old_min, old_max, new_max, new_min: ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
+        pixel_x = map(pose[0], -self.morigin[0], self.morigin[1], 0, self.map_dimension/self.map_resolution)
+        pixel_y = map(pose[1], -self.morigin[0], self.morigin[1], 0, self.map_dimension/self.map_resolution)
+        return int(pixel_x), int(pixel_y)
+
+    def pixel_to_pose(self, pixel):
+        map = lambda old_value, old_min, old_max, new_max, new_min: ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
+        pose_x = map(pixel[0], 0, self.map_dimension/self.map_resolution, -self.morigin[0], self.morigin[1])
+        pose_y = map(pixel[1], 0, self.map_dimension/self.map_resolution, -self.morigin[0], self.morigin[1])
+        return pose_x, pose_y
+
     def generate_path(self, waypoints):
         # waypoints = [(i,2*i) for i in range(5)]
         new_path = Path()
         new_path.header.frame_id = 'map'
-        for way in waypoints:
+        for i in range(waypoints.shape[0]):
+            way = self.pixel_to_pose(waypoints[i])
             pose_stamped = PoseStamped()
             pose_stamped.header.frame_id = 'map'
-            pose_stamped.pose.position.x = float(0.05 * way[0])
-            pose_stamped.pose.position.y = float(0.05 * way[1])
+            pose_stamped.pose.position.x = float(way[0])
+            pose_stamped.pose.position.y = float(way[1])
             pose_stamped.pose.position.z = float(0.0)
 
             new_path.poses.append(pose_stamped)
@@ -128,8 +146,8 @@ class SAM(Node):
         msg.info.resolution = self.map_resolution
         msg.info.width = math.ceil(self.map_dimension / self.map_resolution)
         msg.info.height = math.ceil(self.map_dimension / self.map_resolution)
-        msg.info.origin.position.x = -self.morigin[0]
-        msg.info.origin.position.y = -self.morigin[1]
+        msg.info.origin.position.x = -float(self.morigin[0])
+        msg.info.origin.position.y = -float(self.morigin[1])
         msg.data = [int(i) for i in data]
         self.pub_map.publish(msg)
 
