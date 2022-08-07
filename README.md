@@ -1,7 +1,7 @@
 # Robot-4191
 
 # Setup
-1. [Ubuntu install](https://roboticsbackend.com/install-ubuntu-on-raspberry-pi-without-monitor/#Setup_Wi-Fi_and_ssh_for_your_Raspberry_Pi_4_without_a_monitor)
+1. [Ubuntu install](https://roboticsbackend.com/install-ubuntu-on-raspberry-pi-without-monitor/#Setup_Wi-Fi_and_ssh_for_your_Raspberry_Pi_4_without_a_monitor)\n
 1.5 Install wifi: ```sudo apt-get install network-manager```
 2. [Ros install](https://roboticsbackend.com/install-ros2-on-raspberry-pi/#Prerequisites_install_Ubuntu_Server_2004) 
 3. ```echo "source /opt/ros/foxy/setup.bash" >> ~/.bashrc```
