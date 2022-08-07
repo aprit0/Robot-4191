@@ -5,7 +5,7 @@
 1.5 Install wifi: ```sudo apt-get install network-manager```
 2. [Ros install](https://roboticsbackend.com/install-ros2-on-raspberry-pi/#Prerequisites_install_Ubuntu_Server_2004) 
 3. ```echo "source /opt/ros/foxy/setup.bash" >> ~/.bashrc```
-4. ```mkdir -p ~/4191_ws/src && cd 4191_ws/ && colcon build ```
+4. ```mkdir -p ~/4191_ws/src && cd 4191_ws/ && colcon build ```   
 4.5 [Add git ssh key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
 5. ```git git@github.com:aprit0/Robot-4191.git```
 6. ```colcon build```
