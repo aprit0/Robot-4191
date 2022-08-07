@@ -9,7 +9,7 @@
 4.5 [Add git ssh key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
 5. ```git git@github.com:aprit0/Robot-4191.git```
 6. ```colcon build```
-7. ```pip install -r requirements.txt```
+(((7. ```pip install -r requirements.txt```)))
 ... Setup finished!
 
 # Tutorials
