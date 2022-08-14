@@ -96,5 +96,6 @@ if __name__ == '__main__':
     x_old = 0
     y_old = 0
     theta_old = np.pi/2 #the first theta must be pi/2 so that y is in the forward direction.
+
     for i in range(10):
         x_old, y_old, theta_old, dx, dy, dtheta = test.find_position(x_old, y_old, theta_old, step_size, left_encoder_steps, right_encoder_steps, length)
