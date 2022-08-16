@@ -1,13 +1,13 @@
 import numpy as np
 #import rclpy
 #from rclpy.node import Node
-#from gpiozero import RotaryEncoder
+from gpiozero import RotaryEncoder
+from gpiozero import Motor
 #from std_msgs.msg import *
-#import time
+import time
 
 #to check:
 # encoder steps are set to zero after each calculation
-# encoder steps and velocity are dependent on each other sooooooo
 class Odometry:
 
     def __init__(self, velocity, steer_angle, delta_time):
@@ -44,15 +44,55 @@ class Odometry:
 
         print(f"x = {x:6f}, y = {y:6f}, theta = {theta:6f}, dx = {dx:6f}, dy = {dy:6f}, dtheta = {dtheta:6f}")
 
+        #reset encoder steps
+        left_encoder_steps = 0
+        right_encoder_steps = 0
+
         return x, y, theta, dx, dy, dtheta
 
     def travel(self):
         pass
         #ask the robot to move in the direction and speed given by velocity
+        #MOTOR1 = LEFT (FROM FACING AWAY FROM US)
+        #MOTOR2 = RIGHT
+        motor1 = Motor(forward=17,backward=18) #params are the pin placements - forward and backwards TO EDIT
+        motor2 = Motor(forward=4, backward=14)
 
-    def change_angle(self):
-        pass#inputs =
+        #CODE SOMETHING TO DETERMINE THE VELOCITY IN RATIO OF 0 TO 1 SO WE CAN TELL IT HOW FAST TO GO
+        velocity = 0.5
+
+        if self.velocity > 0: # move forward
+            motor1.forward(speed=velocity) #speed is between 0 and 1
+            motor2.forward(speed=velocity)
+        else: #move backward
+            motor1.backward(speed=velocity)
+            motor2.backward(speed=velocity)
+
+        if #some requirement tells the code that the motors need to stop
+            motor1.stop()
+            motor2.stop()
+
+
+
+
+    def change_angle(self, length, wheel_radius):
+        pass
         #ask the robot to rotate in the direction given by steer angle
+        diff = self.steer*length
+        dist_to_rotate = diff/2 #let left and right motors move an equal amount of steps to rotate
+        encoder_steps_to_rotate = dist_to_rotate/(wheel_radius*np.sin(2*np.pi/48))
+        if self.steer > 0: #rotate left
+            motor1.backward(0.5)
+            motor2.forward(0.5)
+
+        else: #rotate right
+            motor1.forward(0.5)
+            motor2.backward(0.5)
+
+        if (left_encoder_steps == encoder_steps_to_rotate) and (right_encoder_steps == encoder_steps_to_rotate):
+            motor1.stop()
+            motor2.stop()
+
 
 
     # def timer_callback(self):
