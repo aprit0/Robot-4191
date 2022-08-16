@@ -54,3 +54,4 @@ if __name__ == "__main__":
   odo = Odometry()
   while(True):
     odo.get_pose()
+    time.sleep(0.1)
