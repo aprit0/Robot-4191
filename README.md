@@ -18,3 +18,17 @@ https://docs.ros.org/en/foxy/Tutorials.html
 
 # TO-DO
 - *Done* [Connect ros machines](https://roboticsbackend.com/ros2-multiple-machines-including-raspberry-pi/)
+
+# Connect and run on pi
+```  
+ssh pi@192.168.217.116  
+4191  
+```  
+4191  
+python3 Odometry_1.py  
+```
+New Tab
+```  
+4191  
+python3 Motor_PWM.py  
+```
