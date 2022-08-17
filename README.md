@@ -33,6 +33,6 @@ New Tab
 4191  
 python3 Motor_PWM.py  
 ```
-Text editor commands:
+Text editor commands:  
 ```gedit text.py```  
 ```nano text.py```  
