@@ -4,6 +4,26 @@ import math
 from scipy.ndimage import label
 import numpy as np
 
+from gpiozero import PWMOutputDevice as PWM
+from gpiozero import DigitalOutputDevice as LED
+
+
+class Motor:
+    def __int__(self, pin_pwm, pin_led):
+        self.pwm = PWM(pin_pwm)
+        self.led = LED(pin_led)
+
+    def forward(self, value=1):
+        self.pwm.value = value
+        self.led.on()
+        self.pwm.on()
+
+    def backward(self, value=1):
+        self.pwm.value = value
+        self.led.off()
+        self.pwm.on()
+
+
 def to_odometry(odom):
     '''
     Sample:
@@ -33,8 +53,8 @@ def from_odometry(msg):
     odom['x'] = msg.pose.pose.position.x
     odom['y'] = msg.pose.pose.position.y
     quat = msg.pose.pose.orientation
-    euler = math.atan2(2.0*(quat.w * quat.z),
-                       1.0 - 2.0 * (quat.z **2))
+    euler = math.atan2(2.0 * (quat.w * quat.z),
+                       1.0 - 2.0 * (quat.z ** 2))
     odom['theta'] = euler
     odom['dx'] = msg.twist.twist.linear.x
     odom['dtheta'] = msg.twist.twist.angular.z
