@@ -9,7 +9,7 @@ from gpiozero import DigitalOutputDevice as LED
 
 
 class Motor:
-    def __int__(self, pin_pwm, pin_led):
+    def __init__(self, pin_pwm, pin_led):
         self.pwm = PWM(pin_pwm)
         self.led = LED(pin_led)
 
