@@ -13,8 +13,12 @@ def velocity(vel):
 
     t_0 = time.time()
     while (time.time() - t_0 < 3): #time to drive can be an input if needed
+        print(time.time()-t_0)
         motor_left.forward(vel)
         motor_right.forward(vel)
+    motor_left.stop()
+    motor_right.stop()
+
 
 def steer_angle(steer):
 
@@ -30,7 +34,6 @@ def steer_angle(steer):
             motor_right.backward(1)
 
 if __name__ == "__main__":
-    main()
 
     motor_right = Motor(22, 23)
     motor_left = Motor(27, 24)
@@ -38,29 +41,29 @@ if __name__ == "__main__":
     state = True
     while (state == True):
         #ask user if they want to travel straight or turn
-        ans0 = input("Would you like to travel straight or turn? \n1: straight\n2: turn")
+        ans0 = input("Would you like to travel straight or turn? \n1: straight\n2: turn\n")
 
         #ask user to input a velocity or steer angle
-        if (ans0 == 1):
+        if (ans0 == '1'):
             #ask for velocity
-            vel = input("Enter a velocity (0 to 1)")
+            vel = input("Enter a velocity (0 to 1):\n")
 
             #error check
-            while (vel > 1 or vel < 0):
-                vel = input("Enter a velocity (0 to 1)")
+            while (vel > '1' or vel < '0'):
+                vel = input("Enter a velocity (0 to 1)\n")
 
-            velocity(vel)
+            velocity(float(vel))
 
-        elif (ans0 == 2):
+        elif (ans0 == '2'):
             #ask for a steer angle
-            steer = input("Please enter a steer angle in degrees:")
+            steer = input("Please enter a steer angle in degrees:\n")
 
-            steer_angle(steer)
+            steer_angle(float(steer))
 
         #ask user if they would like to continue
-        ans1 = input("Would you like to continue? [y/n]")
+        ans1 = input("Would you like to continue? [y/n]\n")
 
-        if (ans1 == n or N):
+        if (ans1 == 'n' or 'N'):
             state = False
 
 
