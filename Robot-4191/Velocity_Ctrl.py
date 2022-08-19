@@ -12,10 +12,13 @@ def velocity(vel):
     # convert the velocity (0-1) to an actual velocity after testing
 
     t_0 = time.time()
-    while (time.time() - t_0 < 3): #time to drive can be an input if needed
-        print(time.time()-t_0)
-        motor_left.forward(vel)
-        motor_right.forward(vel)
+    while (time.time() - t_0 < 1.5): #time to drive can be an input if needed
+        if (vel>0):
+            motor_left.forward(vel)
+            motor_right.forward(vel)
+        else: #vel<0 (backwards)
+            motor_left.backward(abs(vel))
+            motor_right.backward(abs(vel))
     motor_left.stop()
     motor_right.stop()
 
@@ -32,6 +35,8 @@ def steer_angle(steer):
         else: #turn right
             motor_left.forward(1)
             motor_right.backward(1)
+    motor_left.stop()
+    motor_right.stop()
 
 if __name__ == "__main__":
 
@@ -41,18 +46,20 @@ if __name__ == "__main__":
     state = True
     while (state == True):
         #ask user if they want to travel straight or turn
-        ans0 = input("Would you like to travel straight or turn? \n1: straight\n2: turn\n")
+        ans0 = 0
+        while(ans0 != '1' and ans0 != '2'):
+            ans0 = input("Would you like to travel straight or turn? \n1: straight\n2: turn\n")
 
         #ask user to input a velocity or steer angle
         if (ans0 == '1'):
             #ask for velocity
-            vel = input("Enter a velocity (0 to 1):\n")
+            vel = 5 #an invalid input to enter loop
 
-            #error check
-            while (vel > '1' or vel < '0'):
-                vel = input("Enter a velocity (0 to 1)\n")
+            while (vel > 1  or vel < -1):
+                vel = input("Enter a velocity (-1 to 1)\n")
+                vel = float(vel)
 
-            velocity(float(vel))
+            velocity(vel)
 
         elif (ans0 == '2'):
             #ask for a steer angle
@@ -63,7 +70,8 @@ if __name__ == "__main__":
         #ask user if they would like to continue
         ans1 = input("Would you like to continue? [y/n]\n")
 
-        if (ans1 == 'n' or 'N'):
+        if (ans1 == 'n' or ans1 == 'N'):
             state = False
+
 
 
