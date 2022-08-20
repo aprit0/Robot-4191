@@ -26,7 +26,7 @@ class Odometry:
         self.counter = 0
         
 
-    def get_pose(self,delta_time):
+    def get_pose(self):,delta_time):
         x_old = self.pose[0]
         y_old = self.pose[1]
         theta_old = self.pose[2]
@@ -41,7 +41,8 @@ class Odometry:
         dx = (x - x_old) / delta_time
         dy = (y - y_old) / delta_time
         dtheta = (theta - theta_old) / delta_time
-        
+
+        #update pose and twist
         self.pose = [x, y, theta]
         self.twist = [dx, dy, dtheta]
         
@@ -55,8 +56,10 @@ class Odometry:
 if __name__ == "__main__":
   odo = Odometry()
   delta_time = 0
-  while(True): 
-    odo.get_pose(delta_time)
+  t_0 = time.time()
+  while(True):
+    delta_time = time.time() - t_0
+    odo.get_pose()#delta_time)
     t_0 = time.time()
     time.sleep(0.1)
-    delta_time = time.time() - t_0
+

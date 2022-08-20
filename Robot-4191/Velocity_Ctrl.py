@@ -5,41 +5,69 @@ TODO:
 -test the velocity at different speeds from 0 to 1 and enter results in excel so the actual velocity can be calculated
 -test steer angle as well so that we can convert a time to an angle
 '''
+class Velocity_Ctrl:
 
+    #def __init__(self):
 
-def velocity(vel):
+    def velocity(self,vel):
 
-    # convert the velocity (0-1) to an actual velocity after testing
+        # convert the velocity (0-1) to an actual velocity after testing
 
-    t_0 = time.time()
-    while (time.time() - t_0 < 1.5): #time to drive can be an input if needed
-        if (vel>0):
+        t_0 = time.time()
+        while (time.time() - t_0 < 1.5): #time to drive can be an input if needed
+            if (vel>0):
+                motor_left.forward(vel)
+                motor_right.forward(vel)
+            else: #vel<0 (backwards)
+                motor_left.backward(abs(vel))
+                motor_right.backward(abs(vel))
+        motor_left.stop()
+        motor_right.stop()
+
+    def vel_infinite(self, vel):
+
+        if (vel > 0):
             motor_left.forward(vel)
             motor_right.forward(vel)
-        else: #vel<0 (backwards)
+        else:  # vel<0 (backwards)
             motor_left.backward(abs(vel))
             motor_right.backward(abs(vel))
-    motor_left.stop()
-    motor_right.stop()
 
 
-def steer_angle(steer):
+    def steer_angle(self,steer):
 
-    # convert the steer - currently a time to an angle after testing
+        # convert the steer - currently a time to an angle after testing
 
-    t_0 = time.time()
-    while (time.time() - t_0 < abs(steer)): #the speed of turning must remain constant, while the time allowed to turn changes for different angles
-        if (steer > 0): #turn left
+        t_0 = time.time()
+        while (time.time() - t_0 < abs(steer)): #the speed of turning must remain constant, while the time allowed to turn changes for different angles
+            if (steer > 0): #turn left
+                motor_left.backward(1)
+                motor_right.forward(1)
+            else: #turn right
+                motor_left.forward(1)
+                motor_right.backward(1)
+        motor_left.stop()
+        motor_right.stop()
+
+    def steer_angle_infinite(self, steer):
+
+        if (steer > 0):  # turn left
             motor_left.backward(1)
             motor_right.forward(1)
-        else: #turn right
+        else:  # turn right
             motor_left.forward(1)
             motor_right.backward(1)
-    motor_left.stop()
-    motor_right.stop()
+        motor_left.stop()
+        motor_right.stop()
+
+
+    def stop(self):
+        motor_left.stop()
+        motor_right.stop()
 
 if __name__ == "__main__":
 
+    ctrl = Velocity_Ctrl()
     motor_right = Motor(22, 23)
     motor_left = Motor(27, 24)
 
@@ -59,13 +87,13 @@ if __name__ == "__main__":
                 vel = input("Enter a velocity (-1 to 1)\n")
                 vel = float(vel)
 
-            velocity(vel)
+            ctrl.velocity(vel)
 
         elif (ans0 == '2'):
             #ask for a steer angle
             steer = input("Please enter a steer angle in degrees:\n")
 
-            steer_angle(float(steer))
+            ctrl.steer_angle(float(steer))
 
         #ask user if they would like to continue
         ans1 = input("Would you like to continue? [y/n]\n")
