@@ -36,7 +36,7 @@ class Velocity_Ctrl:
 
     def steer_angle(self,steer):
 
-        # convert the steer - currently a time to an angle after testing
+        #convert the steer - currently a time to an angle after testing
 
         t_0 = time.time()
         while (time.time() - t_0 < abs(steer)): #the speed of turning must remain constant, while the time allowed to turn changes for different angles

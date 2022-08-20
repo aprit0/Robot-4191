@@ -59,7 +59,7 @@ if __name__ == "__main__":
   t_0 = time.time()
   while(True):
     delta_time = time.time() - t_0
-    odo.get_pose()#delta_time)
+    odo.get_pose() #delta_time)
     t_0 = time.time()
     time.sleep(0.1)
 
