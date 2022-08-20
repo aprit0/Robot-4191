@@ -7,7 +7,9 @@ TODO:
 '''
 class Velocity_Ctrl:
 
-    #def __init__(self):
+    def __init__(self,motor_left,motor_right):
+        self.motor_left=motor_left
+        self.motor_right=motor_right
 
     def velocity(self,vel):
 
@@ -16,22 +18,22 @@ class Velocity_Ctrl:
         t_0 = time.time()
         while (time.time() - t_0 < 1.5): #time to drive can be an input if needed
             if (vel>0):
-                motor_left.forward(vel)
-                motor_right.forward(vel)
+                self.motor_left.forward(vel)
+                self.motor_right.forward(vel)
             else: #vel<0 (backwards)
-                motor_left.backward(abs(vel))
-                motor_right.backward(abs(vel))
-        motor_left.stop()
-        motor_right.stop()
+                self.motor_left.backward(abs(vel))
+                self.motor_right.backward(abs(vel))
+        self.motor_left.stop()
+        self.motor_right.stop()
 
     def vel_infinite(self, vel):
 
         if (vel > 0):
-            motor_left.forward(vel)
-            motor_right.forward(vel)
+            self.motor_left.forward(vel)
+            self.motor_right.forward(vel)
         else:  # vel<0 (backwards)
-            motor_left.backward(abs(vel))
-            motor_right.backward(abs(vel))
+            self.motor_left.backward(abs(vel))
+            self.motor_right.backward(abs(vel))
 
 
     def steer_angle(self,steer):
@@ -41,35 +43,33 @@ class Velocity_Ctrl:
         t_0 = time.time()
         while (time.time() - t_0 < abs(steer)): #the speed of turning must remain constant, while the time allowed to turn changes for different angles
             if (steer > 0): #turn left
-                motor_left.backward(1)
-                motor_right.forward(1)
+                self.motor_left.backward(1)
+                self.motor_right.forward(1)
             else: #turn right
-                motor_left.forward(1)
-                motor_right.backward(1)
-        motor_left.stop()
-        motor_right.stop()
+                self.motor_left.forward(1)
+                self.motor_right.backward(1)
+        self.motor_left.stop()
+        self.motor_right.stop()
 
     def steer_angle_infinite(self, steer):
 
         if (steer > 0):  # turn left
-            motor_left.backward(1)
-            motor_right.forward(1)
+            self.motor_left.backward(1)
+            self.motor_right.forward(1)
         else:  # turn right
-            motor_left.forward(1)
-            motor_right.backward(1)
-        motor_left.stop()
-        motor_right.stop()
+            self.motor_left.forward(1)
+            self.motor_right.backward(1)
 
 
     def stop(self):
-        motor_left.stop()
-        motor_right.stop()
+        self.motor_left.stop()
+        self.motor_right.stop()
 
 if __name__ == "__main__":
 
-    ctrl = Velocity_Ctrl()
     motor_right = Motor(22, 23)
     motor_left = Motor(27, 24)
+    ctrl = Velocity_Ctrl(motor_left,motor_right)
 
     state = True
     while (state == True):

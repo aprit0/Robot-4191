@@ -16,17 +16,17 @@ class Odometry:
         # Params
         self.radius = 0.05468 * 0.5
         self.dist_b_wheels = 0.2208
-        self.step_size = 2 * self.radius * np.pi / (11*90.895) 
+        self.step_size =2.5/2* 2 * self.radius * np.pi / (11*90.895) 
         
         # Variables
         self.last_time = 0
-        self.pose = [0., 0., np.pi/2.] # x, y, theta
-        self.twist = [0., 0., 0.] # dx, dy, dtheta
+        self.pose =[round(0.,2),round(0.,2), round(np.pi/2.,4)] # x, y, theta
+        self.twist =[0., 0., 0.] # dx, dy, dtheta
         self.last_time = time.time()
         self.counter = 0
         
 
-    def get_pose(self):,delta_time):
+    def get_pose(self):#delta_time):
         x_old = self.pose[0]
         y_old = self.pose[1]
         theta_old = self.pose[2]
@@ -43,13 +43,13 @@ class Odometry:
         dtheta = (theta - theta_old) / delta_time
 
         #update pose and twist
-        self.pose = [x, y, theta]
+        self.pose = [round(x,2),round(y,2), round(theta,4)]
         self.twist = [dx, dy, dtheta]
         
         self.encoder_left.steps = 0
         self.encoder_right.steps = 0
         #print(self.counter)
-        print(f"x = {x:.6f}, y = {y:.6f}, theta = {theta:.6f}, dx = {dx:.6f}, dy = {dy:.6f}, dtheta = {dtheta:.6f}")
+        #print(f"x = {x:.6f}, y = {y:.6f}, theta = {theta:.6f}, dx = {dx:.6f}, dy = {dy:.6f}, dtheta = {dtheta:.6f}")
         self.last_time = time.time()
         
         
