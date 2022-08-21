@@ -22,7 +22,7 @@ class Motor:
         self.pwm.value = value
         self.led.off()
         self.pwm.on()
-        
+
     def stop(self):
         self.pwm.off()
 
