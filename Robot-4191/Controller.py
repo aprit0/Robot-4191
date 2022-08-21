@@ -27,7 +27,6 @@ class CONTROLLER(Node):
         # Instantiate objects
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback, 10)
         self.sub_odom  # prevent unused variable warning
-
         self.motor_right = Motor(22, 23)
         self.motor_left = Motor(27, 24)
 

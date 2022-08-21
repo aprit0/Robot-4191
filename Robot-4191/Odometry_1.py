@@ -32,7 +32,12 @@ class ODOM(Node):
         # Params
         self.radius = 0.05468 * 0.5
         self.dist_b_wheels = 0.2208
-        self.step_size = 2.5 / 2 * 2 * self.radius * np.pi / (11 * 90.895)
+        self.encoder_steps = 11
+        self.offset = 0.013 # gear offset likely 0.013
+        self.step_theta = 2 * np.pi / self.encoder_steps # degrees motor has rotated
+        self.step_dist = self.radius * self.offset * self.step_theta
+
+        self.step_size = 2.5 / 2 * 2 * self.radius * np.pi / (11 * 90.895) # Depreciated but for reference
 
         # Variables
         self.last_time = 0
@@ -57,8 +62,8 @@ class ODOM(Node):
         y_old = self.pose[1]
         theta_old = self.pose[2]
         self.counter += self.encoder_left.steps
-        dist_left = self.encoder_left.steps * self.step_size
-        dist_right = self.encoder_right.steps * self.step_size
+        dist_left = self.encoder_left.steps * self.step_dist
+        dist_right = self.encoder_right.steps * self.step_dist
 
         delta_time = time.time() - self.last_time
         x = x_old + ((dist_left + dist_right) / 2) * np.cos(theta_old)
