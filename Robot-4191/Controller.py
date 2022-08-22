@@ -6,6 +6,7 @@ import math
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
+
 # Script imports
 from Utils.utils import from_odometry
 from Utils.utils import Motor
@@ -44,40 +45,38 @@ class CONTROLLER(Node):
         self.max_angle = np.pi / 10  # Maximum offset angle from goal before correction
         self.min_angle = np.pi / 14  # Maximum offset angle from goal after correction
 
-        self.main()
-
     def main(self):
         '''
         Aim: take in waypoint, travel to waypoint
         '''
-        while True:
-            self.drive(0, 0)  # Stops robot
-            goal_x, goal_y = input('Enter destination: x, y').split()
-            goal_x, goal_y = [float(goal_x),float(goal_y)]
-            self.goal = [goal_x, goal_y]
-            while self.dist_between_points(self.pose[:2], self.goal) > self.dist_from_goal:
-                print(self.pose)
-                angle_to_rotate = self.calculate_angle_from_goal()
-                print('Dist2Goal: {:.3f} || Ang2Goal: {:.3f}'.format(self.dist_between_points(self.pose[:2], self.goal),
-                                                                     math.degrees(angle_to_rotate)))
-                # Check if we need to rotate or drive straight
-                if (self.state['Turn'] == 0 and abs(angle_to_rotate) > self.max_angle) or self.state['Turn'] == 1:
-                    # Drive curvy
-                    self.state['Turn'] = 1
-                    #self.drive(direction = 0)
-                    self.drive(direction=np.sign(angle_to_rotate))
-                    if abs(angle_to_rotate) < self.min_angle:
-                        self.state['Turn'] = 0
-                elif self.state['Turn'] == 0:
-                    # Drive straight
-                    self.drive(direction=0)
-                else:
-                    print('BOI YO DRIVING BE SHITE', self.state['Turn'], angle_to_rotate)
+        #while True:
+        self.drive(0, 0)  # Stops robot
+        goal_x, goal_y = input('Enter destination: x, y').split()
+        goal_x, goal_y = [float(goal_x),float(goal_y)]
+        self.goal = [goal_x, goal_y]
+        while self.dist_between_points(self.pose[:2], self.goal) > self.dist_from_goal:
+            print(self.pose)
+            angle_to_rotate = self.calculate_angle_from_goal()
+            print('Dist2Goal: {:.3f} || Ang2Goal: {:.3f}'.format(self.dist_between_points(self.pose[:2], self.goal),
+                                                                 math.degrees(angle_to_rotate)))
+            # Check if we need to rotate or drive straight
+            if (self.state['Turn'] == 0 and abs(angle_to_rotate) > self.max_angle) or self.state['Turn'] == 1:
+                # Drive curvy
+                self.state['Turn'] = 1
+                #self.drive(direction = 0)
+                self.drive(direction=np.sign(angle_to_rotate))
+                if abs(angle_to_rotate) < self.min_angle:
+                    self.state['Turn'] = 0
+            elif self.state['Turn'] == 0:
+                # Drive straight
+                self.drive(direction=0)
+            else:
+                print('BOI YO DRIVING BE SHITE', self.state['Turn'], angle_to_rotate)
 
     def listener_callback(self, msg):
         odom = from_odometry(msg)
         self.pose = [odom['x'], odom['y'], odom['theta']]
-        print("Theta = %d",self.pose[2])
+        self.main()
 
     def calculate_angle_from_goal(self):
         angle_to_rotate = self.angle_between_points(self.pose, self.goal) - self.pose[2]
@@ -111,10 +110,10 @@ class CONTROLLER(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    minimal_publisher = CONTROLLER()
-    rclpy.spin(minimal_publisher)
+    controller = CONTROLLER()
+    rclpy.spin(controller)
 
-    minimal_publisher.destroy_node()
+    controller.destroy_node()
     rclpy.shutdown()
 
 
