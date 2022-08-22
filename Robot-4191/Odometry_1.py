@@ -33,15 +33,15 @@ class ODOM(Node):
         self.radius = 0.05468 * 0.5
         self.dist_b_wheels = 0.2208
         self.encoder_steps = 11
-        self.offset = 0.013 # gear offset likely 0.013
+        self.offset = 1 # gear offset likely 0.013
         self.step_theta = 2 * np.pi / self.encoder_steps # degrees motor has rotated
-        self.step_dist = self.radius * self.offset * self.step_theta
-
-        self.step_size = 2.5 / 2 * 2 * self.radius * np.pi / (11 * 90.895) # Depreciated but for reference
+      #  self.step_dist = self.radius * self.offset * self.step_theta
+       # self.step_dist = 2* self.radius*np.pi/self.encoder_steps
+        self.step_dist = 2.5 / 2 * 2 * self.radius * np.pi / (11 * 90.895) # Depreciated but for reference
 
         # Variables
         self.last_time = 0
-        self.pose = [round(0., 2), round(0., 2), round(np.pi / 2., 4)]  # x, y, theta
+        self.pose = [0., 0., np.pi / 2.]  # x, y, theta
         self.twist = [0., 0., 0.]  # dx, dy, dtheta
         self.last_time = time.time()
         self.counter = 0
@@ -64,11 +64,22 @@ class ODOM(Node):
         self.counter += self.encoder_left.steps
         dist_left = self.encoder_left.steps * self.step_dist
         dist_right = self.encoder_right.steps * self.step_dist
+        print(dist_left)
+       # print(dist_right)
+       # print(x_old)
+       # print(theta_old)
 
         delta_time = time.time() - self.last_time
+       # print(delta_time)
         x = x_old + ((dist_left + dist_right) / 2) * np.cos(theta_old)
         y = y_old + ((dist_left + dist_right) / 2) * np.sin(theta_old)
         theta = theta_old + (dist_right - dist_left) / self.dist_b_wheels
+        print(theta)
+        if theta > 2*np.pi:
+            theta -= 2*np.pi
+        elif theta < 0:
+            theta += 2*np.pi
+        print(theta)
         dx = (x - x_old) / delta_time
         dy = (y - y_old) / delta_time
         dtheta = (theta - theta_old) / delta_time
@@ -87,7 +98,10 @@ def main(args=None):
 
     minimal_publisher = ODOM()
     rclpy.spin(minimal_publisher)
+   # minimal_subscriber = CONTROLLER()
+   # rclpy.spin(minimal_subscriber)
 
+   # minimal_subscriber.destroy_node()
     minimal_publisher.destroy_node()
     rclpy.shutdown()
 
