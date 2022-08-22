@@ -44,17 +44,22 @@ class CONTROLLER(Node):
         self.dist_from_goal = 0.05
         self.max_angle = np.pi / 10  # Maximum offset angle from goal before correction
         self.min_angle = np.pi / 14  # Maximum offset angle from goal after correction
+        
+        self.get_goal()
+        
+    def get_goal(self):
+        self.drive(0, 0)  # Stops robot
+        goal_x, goal_y = input('Enter destination: x, y').split()
+        goal_x, goal_y = [float(goal_x),float(goal_y)]
+        self.goal = [goal_x, goal_y]
 
     def main(self):
         '''
         Aim: take in waypoint, travel to waypoint
         '''
         #while True:
-        self.drive(0, 0)  # Stops robot
-        goal_x, goal_y = input('Enter destination: x, y').split()
-        goal_x, goal_y = [float(goal_x),float(goal_y)]
-        self.goal = [goal_x, goal_y]
-        while self.dist_between_points(self.pose[:2], self.goal) > self.dist_from_goal:
+        
+        if self.dist_between_points(self.pose[:2], self.goal) > self.dist_from_goal:
             print(self.pose)
             angle_to_rotate = self.calculate_angle_from_goal()
             print('Dist2Goal: {:.3f} || Ang2Goal: {:.3f}'.format(self.dist_between_points(self.pose[:2], self.goal),
@@ -72,6 +77,10 @@ class CONTROLLER(Node):
                 self.drive(direction=0)
             else:
                 print('BOI YO DRIVING BE SHITE', self.state['Turn'], angle_to_rotate)
+        else:
+            # Destination reached
+            print('Goal achieved')
+            self.get_goal()
 
     def listener_callback(self, msg):
         odom = from_odometry(msg)
