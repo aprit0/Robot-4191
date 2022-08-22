@@ -90,7 +90,7 @@ class CONTROLLER(Node):
     def calculate_angle_from_goal(self):
         angle_to_rotate = self.angle_between_points(self.pose, self.goal) - self.pose[2]
         # Ensures minimum rotation
-        if angle_to_rotate < -np.pi:
+        if angle_to_rotate < 0 : # -np.pi:
             angle_to_rotate += 2 * np.pi
         if angle_to_rotate > np.pi:
             angle_to_rotate -= 2 * np.pi
@@ -101,11 +101,11 @@ class CONTROLLER(Node):
             # Stop the robot
             self.motor_left.stop()
             self.motor_right.stop()
-        elif direction == -1:
+        elif direction == 1:
             # Turn right
             self.motor_left.backward(value)
             self.motor_right.forward(value)
-        elif direction == 1:
+        elif direction == -1:
             # Turn left
             self.motor_left.forward(value)
             self.motor_right.backward(value)
