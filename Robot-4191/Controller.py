@@ -39,18 +39,23 @@ class CONTROLLER(Node):
         self.pose = [0., 0., 0.]  # x, y, theta
         self.goal = [0., 0.]  # x, y
         self.state = {'Turn': 0}
+        self.waypoints = [[0.2, 0.2], [0.2 ,0.65], [0.65, 0.65], [0.2, 0.2], [0.65, 0.2], [0.4, 0.65], [0.4, 0], [0, 0]]
 
         # Params
         self.dist_from_goal = 0.05
         self.max_angle = np.pi / 36  # Maximum offset angle from goal before correction
         self.min_angle = np.pi / 18  # Maximum offset angle from goal after correction
         
-        self.get_goal()
+        i = 0
         
-    def get_goal(self):
+        self.get_goal(i)
+        
+    def get_goal(self,i):
         self.drive(0, 0)  # Stops robot
-        goal_x, goal_y = input('Enter destination: x, y').split()
-        goal_x, goal_y = [float(goal_x),float(goal_y)]
+        #goal_x, goal_y = input('Enter destination: x, y').split()
+        #goal_x, goal_y = [float(goal_x),float(goal_y)]
+        #testing multiple waypoints now, then waypoints will be individually found via ROS
+        goal_x, goal_y = [self.waypoints[i][0], self.waypoints[i][1]]
         self.goal = [goal_x, goal_y]
 
     def main(self):
@@ -79,7 +84,9 @@ class CONTROLLER(Node):
         else:
             # Destination reached
             print('Goal achieved')
-            self.get_goal()
+            i += 1
+            if i < 8:
+                self.get_goal(i)
 
     def listener_callback(self, msg):
         odom = from_odometry(msg)
