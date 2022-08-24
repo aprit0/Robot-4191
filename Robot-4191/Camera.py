@@ -1,17 +1,13 @@
-from gpiozero import Button
-from picamera import PiCamera
-from datetime import datetime
-from signal import pause
-
-camera = PiCamera()
+import cv2
+import time
 
 def capture(i):
-    timestamp = datetime.now().isoformat()
-    camera.start_preview()
-    sleep(5)
-    camera.capture('~/Documents/%d%s.jpg' % i, timestamp)
-    camera.stop_preview()
+    cap = cv2.VideoCapture('~/Documents', cv2.CAP_V4L)
+    time.sleep(1)
+    ret,frame = cap.read()
+    cv2.imwrite('%d_%s.jpg' % i,time.time(),frame)
+    cap.release()
 
-for i in range(10):
+for i in range(5):
     capture(i)
     print(i)

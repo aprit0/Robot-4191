@@ -42,8 +42,8 @@ class CONTROLLER(Node):
 
         # Params
         self.dist_from_goal = 0.05
-        self.max_angle = np.pi / 10  # Maximum offset angle from goal before correction
-        self.min_angle = np.pi / 14  # Maximum offset angle from goal after correction
+        self.max_angle = np.pi / 36  # Maximum offset angle from goal before correction
+        self.min_angle = np.pi / 18  # Maximum offset angle from goal after correction
         
         self.get_goal()
         
@@ -59,11 +59,10 @@ class CONTROLLER(Node):
         '''
         #while True:
         
+        angle_to_rotate = self.calculate_angle_from_goal()
+        print(self.pose[0], self.pose[1], math.degrees(self.pose[2]))
+        print('Dist2Goal: {:.3f} || Ang2Goal: {:.3f}'.format(self.dist_between_points(self.pose[:2], self.goal),math.degrees(angle_to_rotate)))
         if self.dist_between_points(self.pose[:2], self.goal) > self.dist_from_goal:
-            print(self.pose)
-            angle_to_rotate = self.calculate_angle_from_goal()
-            print('Dist2Goal: {:.3f} || Ang2Goal: {:.3f}'.format(self.dist_between_points(self.pose[:2], self.goal),
-                                                                 math.degrees(angle_to_rotate)))
             # Check if we need to rotate or drive straight
             if (self.state['Turn'] == 0 and abs(angle_to_rotate) > self.max_angle) or self.state['Turn'] == 1:
                 # Drive curvy
