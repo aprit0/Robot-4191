@@ -45,6 +45,7 @@ class CONTROLLER(Node):
         self.dist_from_goal = 0.05
         self.max_angle = np.pi / 36  # Maximum offset angle from goal before correction
         self.min_angle = np.pi / 18  # Maximum offset angle from goal after correction
+        self.look_ahead = 0.1 # How far ahead to look before finding a waypoint
         
         self.i = 0
         
@@ -55,7 +56,11 @@ class CONTROLLER(Node):
         #goal_x, goal_y = input('Enter destination: x, y').split()
         #goal_x, goal_y = [float(goal_x),float(goal_y)]
         #testing multiple waypoints now, then waypoints will be individually found via ROS
-        goal_x, goal_y = [self.waypoints[self.i][0], self.waypoints[self.i][1]]
+        counter = 0
+        while(self.dist_between_points < self.look_head):
+            self.waypoints.pop(i)    
+            counter += 1
+        [goal_x, goal_y] = self.waypoints[counter]
         self.goal = [goal_x, goal_y]
 
     def main(self):

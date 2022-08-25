@@ -10,7 +10,7 @@ import time
 from astar_python.astar import Astar
 # from Lidar.LidarSrc.localmap import localmap
 from Lidar.LidarSrc.LidarX2 import LidarX2
-from Utils.utils import from_odometry, pad_map
+from Utils.lidar_utils import from_odometry, pad_map
 from config import map_min, map_dimension, map_resolution
 
 '''
@@ -47,7 +47,7 @@ class SAM(Node):
         # Setup map
         self.map_dimension, self.map_resolution = map_dimension, map_resolution
         self.min_distance = map_min  # distance from the lidar to ignore
-        self.morigin = [int(self.map_dimension / 2.0), int(self.map_dimension / 2.0)]
+        self.morigin = self.map_dimension / 2.0
         self.map_size = int(self.map_dimension / self.map_resolution)
         self.m = np.ones((self.map_size, self.map_size), dtype = int)
 
@@ -61,6 +61,7 @@ class SAM(Node):
 
 
     def update_goal(self, msg):
+        print('update goal')
         self.goal[0] = msg.pose.position.x
         self.goal[1] = msg.pose.position.y
 
@@ -72,6 +73,7 @@ class SAM(Node):
         odom['theta'] = 0
         odom['dtheta'] = 0
         '''
+        print('update pose')
         odom = from_odometry(msg)
         self.pose = [odom['x'], odom['y'], odom['theta']]
         self.vel = [odom['dx'], odom['dtheta']]
@@ -93,13 +95,21 @@ class SAM(Node):
             for point in lidar_measurements:
                 new_dist = 0.001 * point.distance
                 if self.map_dimension/2 > new_dist > self.min_distance:
-                    offset = 0
-                    new_angle = (offset + point.angle) * 3.1415 / 180
+                    # 2 legs forward, offset = 0, 1 leg forward, offset = 180
+                    offset = -180.0
+                    new_angle = -(offset + point.angle)* np.pi / 180
+                    new_angle += self.pose[2]
+                    if new_angle > np.pi:
+                        new_angle -= 2 * np.pi
+                    elif new_angle < np.pi:
+                        new_angle += 2 * np.pi
+                    
                     # convert (d, theta) -> (x, y) in robot frame
                     x_robot, y_robot = new_dist*cos(new_angle), new_dist*sin(new_angle)
                     # convert robot frame to map frame
                     x_map, y_map = self.pose_to_pixel([x_robot, y_robot])
-                    new_m[x_map, y_map] = 100
+                    if self.map_size > x_map > 0 and self.map_size > y_map > 0:
+                        new_m[x_map, y_map] = 100
             # Add padding to points
             self.m = pad_map(new_m, pad_val=50, null_value=100, min_blob=2)
             self.m[self.m == 0.0] = 10
@@ -108,16 +118,21 @@ class SAM(Node):
 
     def get_path(self):
         map_arr = self.m
-        pixel_x, pixel_y = self.pose_to_pixel(self.goal)
-        origin_x, origin_y = [int(i / self.map_resolution) for i in self.morigin]
-        print('Origins: ',origin_x, origin_y, pixel_x, pixel_y, ' || ', self.map_size)
+        updated_goal = self.goal
+        updated_goal = [self.goal[i] - self.pose[i] for i in range(2)]
+        # fix for rotation
+        updated_goal[0] = updated_goal[0] * np.cos(self.pose[2]) - updated_goal[1] * np.sin(self.pose[2])
+        updated_goal[1] = updated_goal[0] * np.sin(self.pose[2]) + updated_goal[1] * np.cos(self.pose[2])
+        # fix for translation
+        print('G/P:', self.goal, self.pose, updated_goal)
+        pixel_x, pixel_y = self.pose_to_pixel(updated_goal)
+        origin_x, origin_y = [int(self.map_size/2) for i in range(2)]
+        print('Origins: ',origin_x, origin_y, pixel_x, pixel_y, ' || ', self.map_dimension/self.map_resolution)
         # waypoints = pyastar2d.astar_path(np.float32(map_arr), (origin_x, origin_y),(pixel_x, pixel_y),  allow_diagonal=False)
         astar = Astar(map_arr)
         waypoints = np.array(astar.run((origin_x, origin_y),(pixel_x, pixel_y)))
         print(waypoints.shape)
         if len(waypoints.shape) ==  2:
-            print(waypoints)
-            print(waypoints[0], waypoints[-1])
             self.generate_path(waypoints)
             self.pub_path.publish(self.path)
         else:
@@ -125,25 +140,22 @@ class SAM(Node):
             return 0
 
     def pose_to_pixel(self, pose):
-        pose[0] += self.pose[0]
-        pose[1] += self.pose[1]
         # pose maps from - map_dimension : map_dimension
-        map = lambda old_value, old_min, old_max, new_max, new_min: ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
-        pixel_x = map(pose[0], -self.morigin[0], self.morigin[1], 0, self.map_dimension/self.map_resolution)
-        pixel_y = map(pose[1], -self.morigin[0], self.morigin[1], 0, self.map_dimension/self.map_resolution)
+        map = lambda old_value, old_min, old_max, new_min, new_max: ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
+        pixel_x = map(pose[0], -self.morigin, self.morigin, 1, (self.map_dimension/self.map_resolution)-1)
+        pixel_y = map(pose[1], -self.morigin, self.morigin, 1, (self.map_dimension/self.map_resolution)-1)
         return int(pixel_x), int(pixel_y)
 
     def pixel_to_pose(self, pixel):
         map = lambda old_value, old_min, old_max, new_max, new_min: ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
-        pose_x = map(pixel[0], 0, self.map_dimension/self.map_resolution, self.morigin[0], -self.morigin[1])
-        pose_y = map(pixel[1], 0, self.map_dimension/self.map_resolution, self.morigin[0], -self.morigin[1])
+        pose_x = map(pixel[0], 1, (self.map_dimension/self.map_resolution)-1, self.morigin, -self.morigin)
+        pose_y = map(pixel[1], 1, (self.map_dimension/self.map_resolution)-1, self.morigin, -self.morigin)
         return pose_x, pose_y
 
     def generate_path(self, waypoints):
-        # waypoints = [(i,2*i) for i in range(5)]
         new_path = Path()
         new_path.header.frame_id = 'map'
-        for i in range(waypoints.shape[0]-1, -1, -1):
+        for i in range(waypoints.shape[0]):
             way = self.pixel_to_pose(waypoints[i])
             pose_stamped = PoseStamped()
             pose_stamped.header.frame_id = 'map'
@@ -158,10 +170,10 @@ class SAM(Node):
         msg = OccupancyGrid()
         msg.header.frame_id = 'map'
         msg.info.resolution = self.map_resolution
-        msg.info.width = math.ceil(self.map_dimension / self.map_resolution)
-        msg.info.height = math.ceil(self.map_dimension / self.map_resolution)
-        msg.info.origin.position.x = -float(self.morigin[0])
-        msg.info.origin.position.y = -float(self.morigin[1])
+        msg.info.width = math.ceil(self.map_size)
+        msg.info.height = math.ceil(self.map_size)
+        msg.info.origin.position.x = float(-self.morigin)
+        msg.info.origin.position.y = float(-self.morigin)
         data = self.m.reshape((self.map_size * self.map_size,))
         data[np.isnan(data)] = 100
         msg.data = [int(i) for i in data]

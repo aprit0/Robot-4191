@@ -1,13 +1,14 @@
 import rclpy
 from rclpy.node import Node
-from Utils.utils import to_odometry
+from Utils.lidar_utils import to_odometry
+import numpy as np
 from nav_msgs.msg import Odometry
 
 
-class MinimalPublisher(Node):
+class TestPose(Node):
 
     def __init__(self):
-        super().__init__('minimal_publisher')
+        super().__init__('test_pose')
         self.publisher_ = self.create_publisher(Odometry, '/robot/odom', 10)
         timer_period = 0.5  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
@@ -16,21 +17,21 @@ class MinimalPublisher(Node):
     def timer_callback(self):
         self.i = self.i if self.i < 10 else 0.0
         odom = {}
-        odom['x'] = self.i
-        odom['y'] = self.i
-        odom['dx'] = self.i*0.1
-        odom['dy'] = self.i*0.1
-        odom['theta'] = self.i*0.1
+        odom['x'] = 0.2
+        odom['y'] = 1.2
+        odom['dx'] = 0.
+        odom['dy'] = 0.
+        odom['theta'] = 1.#np.pi/4
         odom['dtheta'] = 0.
         msg = to_odometry(odom)
         self.publisher_.publish(msg)
-        self.i += 1.0
+        
 
 
 def main(args=None):
     rclpy.init(args=args)
 
-    minimal_publisher = MinimalPublisher()
+    minimal_publisher = TestPose()
 
     rclpy.spin(minimal_publisher)
 
