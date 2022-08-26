@@ -15,16 +15,20 @@ class TestPose(Node):
         self.i = 0.
 
     def timer_callback(self):
-        self.i = self.i if self.i < 10 else 0.0
+        x = input('x(m): ')
+        y = input('y(m): ')
+        theta = input('theta(degrees): ')
         odom = {}
-        odom['x'] = 0.2
-        odom['y'] = 1.2
+        odom['x'] = float(x)
+        odom['y'] = float(y)
         odom['dx'] = 0.
         odom['dy'] = 0.
-        odom['theta'] = 1.#np.pi/4
+        odom['theta'] = float(theta)*np.pi/180#np.pi/4
         odom['dtheta'] = 0.
         msg = to_odometry(odom)
         self.publisher_.publish(msg)
+        print('New_pose: ', odom['x'], odom['y'], odom['theta'])
+        
         
 
 

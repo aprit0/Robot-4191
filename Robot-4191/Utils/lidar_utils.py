@@ -22,9 +22,10 @@ def to_odometry(odom):
     msg.pose.pose.position.x = odom['x']
     msg.pose.pose.position.y = odom['y']
     msg.pose.pose.orientation = quaternion
-    msg.child_frame_id = "base_link"
+    msg.child_frame_id = "map"
     msg.twist.twist.linear.x = odom['dx']
     msg.twist.twist.angular.z = odom['dtheta']
+
     return msg
 
 
@@ -44,11 +45,12 @@ def euclidian(input):
     [x, y] = input
     return ((x**2)+(y**2))**0.5
 
-def pad_map(arr, pad_val=80, null_value=1, min_blob=2):
+def pad_map(arr, pad_val=20, null_value=1, min_blob=2):
+    pixel_pad = 5 # number of pixels to pad
     size = arr.shape[0]
     heuristic = [[1, 0], [0, 1], [-1, 0], [0, -1]]  + [[1,1], [1,-1], [-1,1], [-1,-1]]
     h_0 = []
-    for i in range(3):
+    for i in range(pixel_pad):
         h_0.extend([[j[0] * i, j[1] * i] for j in heuristic])
     structure = np.array([
         [0, 1, 0],
@@ -68,5 +70,6 @@ def pad_map(arr, pad_val=80, null_value=1, min_blob=2):
                     if (new_index[0] < size and new_index[1] < size) and (
                             arr[new_index[0], new_index[1]] != null_value):
                         # pad
-                        arr[new_index[0], new_index[1]] = int(pad_val/euclidian(j))
+                        arr[new_index[0], new_index[1]] += int(pad_val/euclidian(j))
+                        arr[new_index[0], new_index[1]] = min(arr[new_index[0], new_index[1]], 80)                        
     return arr
