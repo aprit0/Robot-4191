@@ -28,6 +28,8 @@ class CONTROLLER(Node):
         # Instantiate objects
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback, 10)
         self.sub_odom  # prevent unused variable warning
+        self.sub_map = self.create_subscription(Path, '/SAM/path', self.get_goal, 10)
+        self.sub_map
         self.motor_right = Motor(22, 23)
         self.motor_left = Motor(27, 24)
 
@@ -39,29 +41,32 @@ class CONTROLLER(Node):
         self.pose = [0., 0., 0.]  # x, y, theta
         self.goal = [0., 0.]  # x, y
         self.state = {'Turn': 0}
-        self.waypoints = [[0.2, 0.2], [0.2 ,0.45], [0.40, 0.45], [0.2, 0.2], [0.4, 0.2], [0.3, 0.45], [0.3, 0], [0, 0]]
+        #self.waypoints = [[0.2, 0.2], [0.2 ,0.45], [0.40, 0.45], [0.2, 0.2], [0.4, 0.2], [0.3, 0.45], [0.3, 0], [0, 0]]
 
         # Params
         self.dist_from_goal = 0.05
         self.max_angle = np.pi / 36  # Maximum offset angle from goal before correction
         self.min_angle = np.pi / 18  # Maximum offset angle from goal after correction
         self.look_ahead = 0.1 # How far ahead to look before finding a waypoint
-        
         self.i = 0
         
-        self.get_goal()
-        
-    def get_goal(self):
-        self.drive(0, 0)  # Stops robot
+    def read_waypoints(self, msg):
+        self.waypoints = []
+        for waypoint in msg.poses:
+            print(waypoint)
+            self.waypoints.append([waypoint.pose.position.x, waypoint.pose.position.y])
+            
+    def get_goal(self, msg):
         #goal_x, goal_y = input('Enter destination: x, y').split()
         #goal_x, goal_y = [float(goal_x),float(goal_y)]
         #testing multiple waypoints now, then waypoints will be individually found via ROS
+        self.read_waypoints(msg)
         counter = 0
-        while(self.dist_between_points < self.look_head):
-            self.waypoints.pop(i)    
+        while(self.dist_between_points(self.pose[:2], self.waypoints[0]) < self.look_head):
+            self.waypoints.pop(counter)    
             counter += 1
-        [goal_x, goal_y] = self.waypoints[counter]
-        self.goal = [goal_x, goal_y]
+
+        self.goal = self.waypoints[0]
 
     def main(self):
         '''
@@ -87,11 +92,15 @@ class CONTROLLER(Node):
             else:
                 print('BOI YO DRIVING BE SHITE', self.state['Turn'], angle_to_rotate)
         else:
-            # Destination reached
-            print('Goal achieved')
-            self.i += 1
-            if self.i < 8:
-                self.get_goal()
+            # Waypoint reached
+            if len(self.waypoints) == 0:
+                # Destination reached
+                print('Goal achieved')
+                self.drive(0, 0)  # Stops robot
+            else:
+                #look for next waypoint
+                self.waypoints.pop(0)
+                self.goal = self.waypoints[0]
 
     def listener_callback(self, msg):
         odom = from_odometry(msg)
