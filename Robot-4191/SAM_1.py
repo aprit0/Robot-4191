@@ -123,6 +123,7 @@ class SAM(Node):
         pixel_x, pixel_y = self.pose_to_pixel(self.goal)
         origin_x, origin_y = self.pose_to_pixel(self.pose[:2])
         print('Origins: ',origin_x, origin_y, pixel_x, pixel_y, ' || ', self.map_dimension/self.map_resolution)
+        print('Map value', map_arr[pixel_x, pixel_y])
         astar = Astar(map_arr)
         waypoints = np.array(astar.run((origin_x, origin_y),(pixel_x, pixel_y)))
         print('Waypoint shape: ', waypoints.shape)
@@ -137,7 +138,7 @@ class SAM(Node):
         # pose maps from - map_dimension : map_dimension
         map = lambda old_value, old_min, old_max, new_min, new_max: ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
         pixel_x = map(pose[0], -self.morigin + self.pose[0], self.morigin + self.pose[0], 1, (self.map_dimension/self.map_resolution)-1)
-        pixel_y = map(pose[1], -self.morigin + self.pose[1], self.morigin + self.pose[1], 1, (self.map_dimension/self.map_resolution)-1)
+        pixel_y = map(pose[1], -self.morigin + self.pose[1], self.morigin + self.pose[1], (self.map_dimension/self.map_resolution)-1, 1)
         return int(pixel_x), int(pixel_y)
 
     def pixel_to_pose(self, pixel):
