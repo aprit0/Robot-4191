@@ -18,13 +18,10 @@ class MinimalPublisher(Node):
         while True:
             x = float(input("Print goal X in metres: "))
             y = float(input("Print goal Y in metres: "))
-            if map_dimension / 2 >= x >= -map_dimension / 2 and map_dimension / 2 >= y >= - map_dimension / 2:
-                print('Publishing goal')
-                msg.pose.position.x = x
-                msg.pose.position.y = y
-                self.publisher_.publish(msg)
-            else:
-                print('Invalid input')
+            print('Publishing goal')
+            msg.pose.position.x = x #-0.07
+            msg.pose.position.y = y
+            self.publisher_.publish(msg)
 
 
 def main(args=None):

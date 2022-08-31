@@ -48,7 +48,7 @@ class CONTROLLER(Node):
         self.dist_from_goal = 0.05
         self.max_angle = np.pi / 36  # Maximum offset angle from goal before correction
         self.min_angle = np.pi / 18  # Maximum offset angle from goal after correction
-        self.look_ahead = 0.2 # How far ahead to look before finding a waypoint
+        self.look_ahead = 0.3 # How far ahead to look before finding a waypoint
         self.i = 0
         
     def read_waypoints(self, msg):
@@ -115,7 +115,7 @@ class CONTROLLER(Node):
             angle_to_rotate -= 2 * np.pi
         return angle_to_rotate
 
-    def drive(self, direction=0, value=1):
+    def drive(self, direction=0, value=0.05):
         if value == 0:
             # Stop the robot
             self.motor_left.stop()

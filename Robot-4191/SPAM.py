@@ -37,7 +37,8 @@ class SAM(Node):
         self.pub_map = self.create_publisher(OccupancyGrid, '/SAM/map', 10)
         self.pub_path = self.create_publisher(Path, '/SAM/path', 10)
         timer_period = 0.1  # seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.timer_map = self.create_timer(timer_period, self.timer_callback)
+        self.timer_path = self.create_timer(0.3, self.path_callback)
 
         # Setup Lidar
         self.lidar = LidarX2("/dev/ttyUSB0")
@@ -55,9 +56,9 @@ class SAM(Node):
         self.path = Path()
 
         # Setup Robot
-        self.pose = [-0.1, -0.05, 0.0]  # x, y, theta
+        self.pose = [0.001, -0.15, np.pi/2]  # x, y, theta
         self.vel = [0.0, 0.0, 0.0]  # dx, dy, dtheta
-        self.goal = [1., 1.]  # x, y
+        self.goal = [0.1, 0.1]  # x, y
         
         self.dist_2_goal = _points = lambda pose, goal: abs(math.dist(pose, goal))
 
@@ -79,18 +80,19 @@ class SAM(Node):
         self.pose = [odom['x'], odom['y'], odom['theta']]
         self.vel = [odom['dx'], odom['dtheta']]
         print('update pose', self.pose)
+        self.t_1 = time.time()
 
     def timer_callback(self):
         t_0 = time.time()
         self.get_map()
         self.publish_map()
         print('time: map: {:.5}'.format(time.time() - t_0))
-        if self.dist_2_goal(self.pose[:2], self.goal) > self.min_distance:
-            t_0 = time.time()
-            print('Path dist', self.dist_2_goal(self.pose[:2], self.goal)) 
+    def path_callback(self):
+        dist =  self.dist_2_goal(self.pose[:2], self.goal) 
+        print('================', dist)
+        if dist > 0.1:
+            print('++++++++++==update_path')
             self.get_path()
-            print('Path deets: ', len(self.path.poses), time.time() - t_0)
-
     def get_map(self, padding=True):
         # heuristic = [0.001 * self.min_distance, 0, -0.001 * self.min_distance]
         lidar_measurements = self.lidar.getMeasures()
@@ -117,8 +119,8 @@ class SAM(Node):
                     if self.map_size > x_map > 0 and self.map_size > y_map > 0:
                         new_m[x_map, y_map] = 100
             # Add padding to points
-            self.m = new_m# pad_map(new_m, pad_val=np.Infinity, null_value=np.Infinity, min_blob=2)
-            self.m[self.m == 0.0] = 1
+            self.m = pad_map(new_m, pad_value=10, null_value=100, min_blob=3)
+            self.m[self.m == 0.0] = 5
             self.m[self.m == 100] = None
             print('Lidar points: ',len(distances))
 
@@ -130,6 +132,12 @@ class SAM(Node):
         origin_x, origin_y = self.pose_to_pixel(self.pose[:2])
         print('Origins: ',origin_x, origin_y, pixel_x, pixel_y, ' || ', self.map_dimension/self.map_resolution)
         map_arr[pixel_x, pixel_y] = 1
+        map_arr[pixel_x, pixel_y+1] = 1
+        map_arr[pixel_x+1, pixel_y] = 1
+        map_arr[pixel_x, pixel_y-1] = 1
+        map_arr[pixel_x-1, pixel_y] = 1
+
+        map_arr[origin_x, origin_y] = 1
         print('Map value', map_arr[pixel_x, pixel_y])
         print('pose value: ', map_arr[origin_x, origin_y])
         astar = Astar(map_arr)

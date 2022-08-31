@@ -22,7 +22,7 @@ class ODOM(Node):
         # Ros intialisation
         super().__init__('odometry')
         self.publisher_ = self.create_publisher(Odometry, '/robot/odom', 10)
-        timer_period = 0.05  # seconds
+        timer_period = 0.2  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
         # Intialise
@@ -31,9 +31,9 @@ class ODOM(Node):
 
         # Params
         self.radius = 0.05468 * 0.5
-        self.dist_b_wheels = 0.2208
+        self.dist_b_wheels = 0.2208 - 0.035
         self.encoder_steps = 12
-        self.offset = 0.013*1.0189 # gear offset likely 0.013
+        self.offset = 0.013333333#*1.0189 # gear offset likely 0.013
         self.step_theta = 2 * np.pi / self.encoder_steps # degrees motor has rotated
         self.step_dist = self.radius * self.offset * self.step_theta
        # self.step_dist = 2* self.radius*np.pi/self.encoder_steps
@@ -43,7 +43,7 @@ class ODOM(Node):
         self.last_time = 0
         self.wheel_left = 0
         self.wheel_right = 0
-        self.pose = [0., -0.14, np.pi / 2.]  # x, y, theta
+        self.pose = [0., 0., np.pi / 2.]  # x, y, theta
         self.twist = [0., 0., 0.]  # dx, dy, dtheta
         self.last_time = time.time()
         self.counter = 0
