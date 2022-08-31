@@ -71,5 +71,5 @@ def pad_map(arr, pad_val=20, null_value=1, min_blob=2):
                             arr[new_index[0], new_index[1]] != null_value):
                         # pad
                         arr[new_index[0], new_index[1]] += int(pad_val)#/euclidian(j))
-                        arr[new_index[0], new_index[1]] = min(arr[new_index[0], new_index[1]], 80)                        
+                        arr[new_index[0], new_index[1]] = min(arr[new_index[0], new_index[1]], null_value)                        
     return arr

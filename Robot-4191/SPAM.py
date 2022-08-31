@@ -6,7 +6,7 @@ import math
 from math import cos, sin
 import numpy as np
 import time
-# import pyastar2d
+import pyastar2d
 from astar_python.astar import Astar
 # from Lidar.LidarSrc.localmap import localmap
 from Lidar.LidarSrc.LidarX2 import LidarX2
@@ -55,9 +55,9 @@ class SAM(Node):
         self.path = Path()
 
         # Setup Robot
-        self.pose = [0.0, 0.0, 0.0]  # x, y, theta
+        self.pose = [-0.1, -0.05, 0.0]  # x, y, theta
         self.vel = [0.0, 0.0, 0.0]  # dx, dy, dtheta
-        self.goal = [0.0, 0.0]  # x, y
+        self.goal = [1., 1.]  # x, y
         
         self.dist_2_goal = _points = lambda pose, goal: abs(math.dist(pose, goal))
 
@@ -117,7 +117,7 @@ class SAM(Node):
                     if self.map_size > x_map > 0 and self.map_size > y_map > 0:
                         new_m[x_map, y_map] = 100
             # Add padding to points
-            self.m = pad_map(new_m, pad_val=50, null_value=100, min_blob=2)
+            self.m = new_m# pad_map(new_m, pad_val=np.Infinity, null_value=np.Infinity, min_blob=2)
             self.m[self.m == 0.0] = 1
             self.m[self.m == 100] = None
             print('Lidar points: ',len(distances))
@@ -129,10 +129,13 @@ class SAM(Node):
         pixel_x, pixel_y = self.pose_to_pixel(self.goal)
         origin_x, origin_y = self.pose_to_pixel(self.pose[:2])
         print('Origins: ',origin_x, origin_y, pixel_x, pixel_y, ' || ', self.map_dimension/self.map_resolution)
+        map_arr[pixel_x, pixel_y] = 1
         print('Map value', map_arr[pixel_x, pixel_y])
         print('pose value: ', map_arr[origin_x, origin_y])
         astar = Astar(map_arr)
         waypoints = np.array(astar.run((origin_x, origin_y),(pixel_x, pixel_y)))
+        # waypoints = np.array(pyastar2d.astar_path(np.float32(map_arr),(pixel_x, pixel_y),(origin_x, origin_y) ))#, allow_diagonal=True), dtype=np.float32)
+
         print('Waypoint shape: ', waypoints.shape)
         if len(waypoints.shape) ==  2:
             self.generate_path(waypoints)
