@@ -5,7 +5,7 @@ import math
 # Ros imports
 import rclpy
 from rclpy.node import Node
-from nav_msgs.msg import Odometry
+from nav_msgs.msg import Path, Odometry
 
 # Script imports
 from Utils.utils import from_odometry
@@ -42,18 +42,18 @@ class CONTROLLER(Node):
         self.goal = [0., 0.]  # x, y
         self.state = {'Turn': 0}
         #self.waypoints = [[0.2, 0.2], [0.2 ,0.45], [0.40, 0.45], [0.2, 0.2], [0.4, 0.2], [0.3, 0.45], [0.3, 0], [0, 0]]
+        self.waypoints = []
 
         # Params
         self.dist_from_goal = 0.05
         self.max_angle = np.pi / 36  # Maximum offset angle from goal before correction
         self.min_angle = np.pi / 18  # Maximum offset angle from goal after correction
-        self.look_ahead = 0.1 # How far ahead to look before finding a waypoint
+        self.look_ahead = 0.2 # How far ahead to look before finding a waypoint
         self.i = 0
         
     def read_waypoints(self, msg):
         self.waypoints = []
         for waypoint in msg.poses:
-            print(waypoint)
             self.waypoints.append([waypoint.pose.position.x, waypoint.pose.position.y])
             
     def get_goal(self, msg):
@@ -61,10 +61,9 @@ class CONTROLLER(Node):
         #goal_x, goal_y = [float(goal_x),float(goal_y)]
         #testing multiple waypoints now, then waypoints will be individually found via ROS
         self.read_waypoints(msg)
-        counter = 0
-        while(self.dist_between_points(self.pose[:2], self.waypoints[0]) < self.look_head):
-            self.waypoints.pop(counter)    
-            counter += 1
+        while(len(self.waypoints) > 1 and self.dist_between_points(self.pose[:2], self.waypoints[0]) < self.look_ahead):
+            print('way len', len(self.waypoints))
+            self.waypoints.pop(0)    
 
         self.goal = self.waypoints[0]
 
@@ -93,7 +92,7 @@ class CONTROLLER(Node):
                 print('BOI YO DRIVING BE SHITE', self.state['Turn'], angle_to_rotate)
         else:
             # Waypoint reached
-            if len(self.waypoints) == 0:
+            if len(self.waypoints) == 1 or len(self.waypoints) == 0:
                 # Destination reached
                 print('Goal achieved')
                 self.drive(0, 0)  # Stops robot

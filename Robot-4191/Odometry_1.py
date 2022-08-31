@@ -43,7 +43,7 @@ class ODOM(Node):
         self.last_time = 0
         self.wheel_left = 0
         self.wheel_right = 0
-        self.pose = [0., 0., np.pi / 2.]  # x, y, theta
+        self.pose = [0., -0.14, np.pi / 2.]  # x, y, theta
         self.twist = [0., 0., 0.]  # dx, dy, dtheta
         self.last_time = time.time()
         self.counter = 0

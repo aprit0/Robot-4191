@@ -46,9 +46,9 @@ def euclidian(input):
     return ((x**2)+(y**2))**0.5
 
 def pad_map(arr, pad_val=20, null_value=1, min_blob=2):
-    pixel_pad = 5 # number of pixels to pad
+    pixel_pad = 2 # number of pixels to pad
     size = arr.shape[0]
-    heuristic = [[1, 0], [0, 1], [-1, 0], [0, -1]]  + [[1,1], [1,-1], [-1,1], [-1,-1]]
+    heuristic = [[1, 0], [0, 1], [-1, 0], [0, -1]] + [[1,1], [1,-1], [-1,1], [-1,-1]]
     h_0 = []
     for i in range(pixel_pad):
         h_0.extend([[j[0] * i, j[1] * i] for j in heuristic])
@@ -70,6 +70,6 @@ def pad_map(arr, pad_val=20, null_value=1, min_blob=2):
                     if (new_index[0] < size and new_index[1] < size) and (
                             arr[new_index[0], new_index[1]] != null_value):
                         # pad
-                        arr[new_index[0], new_index[1]] += int(pad_val/euclidian(j))
+                        arr[new_index[0], new_index[1]] += int(pad_val)#/euclidian(j))
                         arr[new_index[0], new_index[1]] = min(arr[new_index[0], new_index[1]], 80)                        
     return arr

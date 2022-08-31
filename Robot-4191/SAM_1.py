@@ -114,8 +114,8 @@ class SAM(Node):
                     if self.map_size > x_map > 0 and self.map_size > y_map > 0:
                         new_m[x_map, y_map] = 100
             # Add padding to points
-            self.m = new_m # pad_map(new_m, pad_val=50, null_value=100, min_blob=2)
-            self.m[self.m == 0.0] = 10
+            self.m = new_m# pad_map(new_m, pad_val=50, null_value=100, min_blob=2)
+            self.m[self.m == 0.0] = 1
             self.m[self.m == 100] = None
             print('Lidar points: ',len(distances))
 
