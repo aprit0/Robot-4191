@@ -36,7 +36,7 @@ class SAM(Node):
                                                  '/robot/odom', self.update_odom, 10)
         self.pub_map = self.create_publisher(OccupancyGrid, '/SAM/map', 10)
         self.pub_path = self.create_publisher(Path, '/SAM/path', 10)
-        timer_period = 0.05  # seconds
+        timer_period = 0.1  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
         # Setup Lidar
@@ -58,12 +58,14 @@ class SAM(Node):
         self.pose = [0.0, 0.0, 0.0]  # x, y, theta
         self.vel = [0.0, 0.0, 0.0]  # dx, dy, dtheta
         self.goal = [0.0, 0.0]  # x, y
+        
+        self.dist_2_goal = _points = lambda pose, goal: abs(math.dist(pose, goal))
 
 
     def update_goal(self, msg):
-        print('update goal')
         self.goal[0] = msg.pose.position.x
         self.goal[1] = msg.pose.position.y
+        print('update goal', self.goal)
 
     def update_odom(self, msg):
         '''
@@ -73,17 +75,18 @@ class SAM(Node):
         odom['theta'] = 0
         odom['dtheta'] = 0
         '''
-        print('update pose')
         odom = from_odometry(msg)
         self.pose = [odom['x'], odom['y'], odom['theta']]
         self.vel = [odom['dx'], odom['dtheta']]
+        print('update pose', self.pose)
 
     def timer_callback(self):
         t_0 = time.time()
         self.get_map()
         self.publish_map()
         print('time: map: {:.5}'.format(time.time() - t_0))
-        self.get_path()
+        if self.dist_2_goal(self.pose[:2], self.goal) > 0.1:
+            self.get_path()
 
     def get_map(self, padding=True):
         # heuristic = [0.001 * self.min_distance, 0, -0.001 * self.min_distance]
@@ -96,7 +99,7 @@ class SAM(Node):
                 new_dist = 0.001 * point.distance
                 if self.map_dimension/2 > new_dist > self.min_distance:
                     # 2 legs forward, offset = 0, 1 leg forward, offset = 180
-                    offset = -180.0 # Sets the correct orientation of lidar wrt to the robot
+                    offset = 90 # Sets the correct orientation of lidar wrt to the robot
                     new_angle = -(offset + point.angle)* np.pi / 180
                     new_angle -= self.pose[2] # new_angle is now in world frame
                     if new_angle > np.pi:
@@ -111,7 +114,7 @@ class SAM(Node):
                     if self.map_size > x_map > 0 and self.map_size > y_map > 0:
                         new_m[x_map, y_map] = 100
             # Add padding to points
-            self.m = pad_map(new_m, pad_val=50, null_value=100, min_blob=2)
+            self.m = new_m # pad_map(new_m, pad_val=50, null_value=100, min_blob=2)
             self.m[self.m == 0.0] = 10
             self.m[self.m == 100] = None
             print('Lidar points: ',len(distances))
@@ -124,6 +127,7 @@ class SAM(Node):
         origin_x, origin_y = self.pose_to_pixel(self.pose[:2])
         print('Origins: ',origin_x, origin_y, pixel_x, pixel_y, ' || ', self.map_dimension/self.map_resolution)
         print('Map value', map_arr[pixel_x, pixel_y])
+        print('pose value: ', map_arr[origin_x, origin_y])
         astar = Astar(map_arr)
         waypoints = np.array(astar.run((origin_x, origin_y),(pixel_x, pixel_y)))
         print('Waypoint shape: ', waypoints.shape)
@@ -137,8 +141,8 @@ class SAM(Node):
     def pose_to_pixel(self, pose):
         # pose maps from - map_dimension : map_dimension
         map = lambda old_value, old_min, old_max, new_min, new_max: ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
-        pixel_x = map(pose[0], -self.morigin + self.pose[0], self.morigin + self.pose[0], 1, (self.map_dimension/self.map_resolution)-1)
-        pixel_y = map(pose[1], -self.morigin + self.pose[1], self.morigin + self.pose[1], (self.map_dimension/self.map_resolution)-1, 1)
+        pixel_x = map(pose[0], self.morigin + self.pose[0], -self.morigin + self.pose[0], (self.map_dimension/self.map_resolution)-1, 1)
+        pixel_y = map(pose[1], self.morigin + self.pose[1], -self.morigin + self.pose[1], (self.map_dimension/self.map_resolution)-1, 1)
         return int(pixel_x), int(pixel_y)
 
     def pixel_to_pose(self, pixel):
