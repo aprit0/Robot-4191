@@ -45,14 +45,14 @@ def euclidian(input):
     [x, y] = input
     return ((x**2)+(y**2))**0.5
 
-def pad_map(arr, map_value = 0, pad_value=20, null_value=1, min_blob=2):
+def pad_map(arr, pad_value=20, null_value=1, min_blob=2):
     pad_val = pad_value
-    pixel_pad = 2 # number of pixels to pad
+    pixel_pad = 3 # number of pixels to pad
     size = arr.shape[0]
     heuristic = [[1, 0], [0, 1], [-1, 0], [0, -1]] #+ [[1,1], [1,-1], [-1,1], [-1,-1]]
-    h_0 = heuristic
+    h_0 = []
     for i in range(1, pixel_pad):
-        h_0.extend([[j[0] + np.sign(j[0]), j[1] + np.sign(j[1])] for j in heuristic])
+        h_0.extend([[j[0] + np.sign(j[0]), j[1] + np.sign(j[0])] for j in heuristic])
     print(h_0)
     structure = np.array([
         [0, 1, 0],
@@ -70,10 +70,11 @@ def pad_map(arr, map_value = 0, pad_value=20, null_value=1, min_blob=2):
                 for j in h_0:
                     new_index = np.add(point, j)
                     if (new_index[0] < size and new_index[1] < size) and (
-                            arr[new_index[0], new_index[1]] != null_value) and (arr[new_index[0], new_index[1]] != pad_value):
+                            arr[new_index[0], new_index[1]] != null_value):
                         # pad
                         arr[new_index[0], new_index[1]] = int(pad_val)#/euclidian(j))
+                        arr[new_index[0], new_index[1]] = min(arr[new_index[0], new_index[1]], null_value)                        
         else:
             for point in mask:
-                arr[point] = map_value
+                arr[point] = pad_value
     return arr

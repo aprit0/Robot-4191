@@ -6,6 +6,7 @@ import math
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Path, Odometry
+from std_msgs.msg import Int16
 
 # Script imports
 from Utils.utils import from_odometry
@@ -30,11 +31,13 @@ class CONTROLLER(Node):
         self.sub_odom  # prevent unused variable warning
         self.sub_map = self.create_subscription(Path, '/SAM/path', self.get_goal, 10)
         self.sub_map
+        self.sub_turn = self.create_subscription(Int16, '/SAM/trun', self.turn_callback, 10)
+        self.sub_turn
         self.motor_right = Motor(22, 23)
         self.motor_left = Motor(27, 24)
 
         # Functions
-        self.dist_between_points = lambda pose, goal: abs(math.dist(pose, goal))
+        self.dist_between_points = lambda pose, goal: math.dist(pose, goal)
         self.angle_between_points = lambda pose, goal: np.arctan2(goal[1] - pose[1], goal[0] - pose[0])
 
         # Variables
@@ -46,10 +49,14 @@ class CONTROLLER(Node):
 
         # Params
         self.dist_from_goal = 0.05
-        self.max_angle = np.pi / 36  # Maximum offset angle from goal before correction
-        self.min_angle = np.pi / 18  # Maximum offset angle from goal after correction
-        self.look_ahead = 0.3 # How far ahead to look before finding a waypoint
+        self.min_angle = np.pi / 15  # Maximum offset angle from goal after correction
+        self.max_angle = self.min_angle * 0.5  # Maximum offset angle from goal before correction
+        self.look_ahead = 0.4 # How far ahead to look before finding a waypoint
         self.i = 0
+        self.turn = 0
+    
+    def turn_callback(self, msg):
+        self.turn = msg.data
         
     def read_waypoints(self, msg):
         self.waypoints = []
@@ -74,20 +81,20 @@ class CONTROLLER(Node):
         #while True:
         
         angle_to_rotate = self.calculate_angle_from_goal()
+        dist_to_goal = self.dist_between_points(self.pose[:2], self.goal)
         print(self.pose[0], self.pose[1], math.degrees(self.pose[2]))
-        print('Dist2Goal: {:.3f} || Ang2Goal: {:.3f}'.format(self.dist_between_points(self.pose[:2], self.goal),math.degrees(angle_to_rotate)))
-        if self.dist_between_points(self.pose[:2], self.goal) > self.dist_from_goal:
+        print('Dist2Goal: {:.3f} || Ang2Goal: {:.3f}'.format(dist_to_goal, math.degrees(angle_to_rotate)))
+        if dist_to_goal > self.dist_from_goal:
             # Check if we need to rotate or drive straight
             if (self.state['Turn'] == 0 and abs(angle_to_rotate) > self.max_angle) or self.state['Turn'] == 1:
                 # Drive curvy
                 self.state['Turn'] = 1
-                #self.drive(direction = 0)
-                self.drive(direction=np.sign(angle_to_rotate))
                 if abs(angle_to_rotate) < self.min_angle:
                     self.state['Turn'] = 0
+                self.drive(ang_to_rotate=angle_to_rotate)
             elif self.state['Turn'] == 0:
                 # Drive straight
-                self.drive(direction=0)
+                self.drive(ang_to_rotate=0)
             else:
                 print('BOI YO DRIVING BE SHITE', self.state['Turn'], angle_to_rotate)
         else:
@@ -115,19 +122,31 @@ class CONTROLLER(Node):
             angle_to_rotate -= 2 * np.pi
         return angle_to_rotate
 
-    def drive(self, direction=0, value=0.05):
+    def drive(self, ang_to_rotate=0, value=0.01):
+        curve = 0.3
+        direction = np.sign(ang_to_rotate)
+        if self.turn != 0 and abs(ang_to_rotate) > 1.5 and self.turn != direction:
+            direction = direction *-1
         if value == 0:
             # Stop the robot
             self.motor_left.stop()
             self.motor_right.stop()
         elif direction == 1:
             # Turn right
-            self.motor_left.backward(value)
-            self.motor_right.forward(value)
+            if abs(ang_to_rotate) < curve:
+                self.motor_left.stop()
+                self.motor_right.forward(value)
+            else:
+                self.motor_left.backward(value)
+                self.motor_right.forward(value)
         elif direction == -1:
             # Turn left
-            self.motor_left.forward(value)
-            self.motor_right.backward(value)
+            if abs(ang_to_rotate) < curve:
+                self.motor_left.forward(value)
+                self.motor_right.stop()
+            else:
+                self.motor_left.forward(value)
+                self.motor_right.backward(value)
         elif direction == 0:
             # Drive forwards
             self.motor_left.forward(value)

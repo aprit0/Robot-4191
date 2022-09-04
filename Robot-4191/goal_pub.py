@@ -18,10 +18,10 @@ class MinimalPublisher(Node):
         while True:
             x = float(input("Print goal X in metres: "))
             y = float(input("Print goal Y in metres: "))
-            print('Publishing goal')
-            msg.pose.position.x = x #-0.07
-            msg.pose.position.y = y
+            msg.pose.position.x = x #- 0.025 #goal - offset - contreller goal 
+            msg.pose.position.y = y #- 0.025
             self.publisher_.publish(msg)
+            print('Publishing goal', msg.pose.position)
 
 
 def main(args=None):

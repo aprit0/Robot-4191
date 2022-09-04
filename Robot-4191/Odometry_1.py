@@ -22,7 +22,7 @@ class ODOM(Node):
         # Ros intialisation
         super().__init__('odometry')
         self.publisher_ = self.create_publisher(Odometry, '/robot/odom', 10)
-        timer_period = 0.2  # seconds
+        timer_period = 0.1  # 0.05 seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
         # Intialise
@@ -31,7 +31,7 @@ class ODOM(Node):
 
         # Params
         self.radius = 0.05468 * 0.5
-        self.dist_b_wheels = 0.2208 - 0.035
+        self.dist_b_wheels = 0.2208 - 0.002# 0.05:- 0.0063 # Magic number for yaw
         self.encoder_steps = 12
         self.offset = 0.013333333#*1.0189 # gear offset likely 0.013
         self.step_theta = 2 * np.pi / self.encoder_steps # degrees motor has rotated
@@ -47,6 +47,7 @@ class ODOM(Node):
         self.twist = [0., 0., 0.]  # dx, dy, dtheta
         self.last_time = time.time()
         self.counter = 0
+        self.t_0 = time.time()
 
     def timer_callback(self):
         self.get_pose()
@@ -58,29 +59,29 @@ class ODOM(Node):
                 'dtheta': self.twist[2]}
         msg = to_odometry(odom)
         self.publisher_.publish(msg)
+        if time.time() - self.t_0 > 0.1:
+            print('X, Y, Th', self.pose)
+            #print('Steps', self.encoder_left.steps)
+            self.t_0 = time.time()
 
     def get_pose(self):
         x_old = self.pose[0]
         y_old = self.pose[1]
         theta_old = self.pose[2]
-        print('Steps:', self.encoder_left.steps)
-        dist_left = self.encoder_left.steps * self.step_dist
-        dist_right = self.encoder_right.steps * self.step_dist
-        print('dist l/r: ', self.wheel_left, self.wheel_right)
-
+        dist_left = self.encoder_left.steps * 0.0002 # * self.step_dist
+        dist_right = self.encoder_right.steps * 0.0002 # * self.step_dist
         delta_time = time.time() - self.last_time
-       
-        x = x_old + ((dist_left + dist_right) / 2) * np.cos(theta_old)
-        y = y_old + ((dist_left + dist_right) / 2) * np.sin(theta_old)
+
         theta = theta_old + (dist_right - dist_left) / ( self.dist_b_wheels)
         if theta > np.pi:
             theta -= 2*np.pi
         elif theta < -np.pi:
             theta += 2*np.pi
+        x = x_old + ((dist_left + dist_right) / 2) * np.cos(theta)
+        y = y_old + ((dist_left + dist_right) / 2) * np.sin(theta)
         dx = (x - x_old) / delta_time
         dy = (y - y_old) / delta_time
         dtheta = (theta - theta_old) / delta_time
-        print(theta)
         # update pose and twist
         self.pose = [x, y, theta]
         self.twist = [dx, dy, dtheta]

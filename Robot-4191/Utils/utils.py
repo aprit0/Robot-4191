@@ -3,6 +3,7 @@ from geometry_msgs.msg import Point, Pose, Quaternion, Twist, Vector3
 import math
 from scipy.ndimage import label
 import numpy as np
+from time import sleep
 
 from gpiozero import PWMOutputDevice as PWM
 from gpiozero import DigitalOutputDevice as LED
@@ -12,19 +13,23 @@ class Motor:
     def __init__(self, pin_pwm, pin_led):
         self.pwm = PWM(pin_pwm)
         self.led = LED(pin_led)
+        self.delay = 0.0001
 
     def forward(self, value=1):
         self.pwm.value = value
         self.led.on()
         self.pwm.on()
+        sleep(self.delay)
 
     def backward(self, value=1):
         self.pwm.value = value
         self.led.off()
         self.pwm.on()
+        sleep(self.delay)
 
     def stop(self):
         self.pwm.off()
+        sleep(self.delay)
 
 
 def to_odometry(odom):
