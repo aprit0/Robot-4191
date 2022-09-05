@@ -3,13 +3,9 @@ import time
 import math
 import csv
 
-rev = GPIO.RPI_REVISION
-if rev == 2 or rev == 3:
-    bus = smbus.SMBus(1)
-else:
-    bus = smbus.SMBus(0)
+bus = smbus.SMBus(1)
 
-address = 0x1e
+address = 0x0d# 1e
 
 def read_byte(adr):
     return bus.read_byte_data(address, adr)
@@ -52,7 +48,7 @@ if __name__ == "__main__":
             bearing += 2 * math.pi
         bearing = math.degrees(bearing)
         
-        print x_out, y_out, x_out_scaled, y_out_scaled, bearing
+        print(x_out, y_out, x_out_scaled, y_out_scaled, bearing)
         
         compassValues = {}
         compassValues[ "X" ] = x_out

@@ -3,13 +3,13 @@ import time
 import math
 import csv
 
-rev = GPIO.RPI_REVISION
-if rev == 2 or rev == 3:
-    bus = smbus.SMBus(1)
-else:
-    bus = smbus.SMBus(0)
-
-address = 0x1e
+# rev = GPIO.RPI_REVISION
+#if rev == 2 or rev == 3:
+#    bus = smbus.SMBus(1)
+#else:
+#    bus = smbus.SMBus(0)
+bus = smbus.SMBus(1)
+address = 0x0d# 0x1e
 
 def read_byte(adr):
     return bus.read_byte_data(address, adr)
@@ -45,4 +45,4 @@ if __name__ == "__main__":
     if (bearing < 0):
         bearing += 2 * math.pi
     
-    print "Bearing: ", math.degrees(bearing)
+    print("Bearing: ", math.degrees(bearing))
