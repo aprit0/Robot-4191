@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Int16
+from std_msgs.msg import Int16, Bool
 from nav_msgs.msg import Path, OccupancyGrid, Odometry
 from geometry_msgs.msg import Point, Quaternion, Pose, PoseStamped
 import math
@@ -38,6 +38,7 @@ class SAM(Node):
         self.pub_map = self.create_publisher(OccupancyGrid, '/SAM/map', 10)
         self.pub_path = self.create_publisher(Path, '/SAM/path', 10)
         self.pub_turn = self.create_publisher(Int16, '/SAM/turn', 10)
+        self.sub_waypoints_reached = self.create_subscription(Bool, '/Controller/msg', self.timer_callback(), 10)
         timer_period = 0.1  # seconds
         # self.timer_map = self.create_timer(timer_period, self.timer_callback)
         # self.timer_path = self.create_timer(0.3, self.path_callback)
@@ -72,7 +73,7 @@ class SAM(Node):
         self.goal[0] = msg.pose.position.x
         self.goal[1] = msg.pose.position.y
         print('update goal', self.goal)
-        self.timer_callback() 
+        #self.timer_callback()
     def update_odom(self, msg):
         '''
         odom['x'] = 0
@@ -86,12 +87,13 @@ class SAM(Node):
         self.vel = [odom['dx'], odom['dtheta']]
         self.t_1 = time.time()
 
-    def timer_callback(self):
-        t_0 = time.time()
-        self.get_map()
-        self.publish_map()
-        print('time: map: {:.5}'.format(time.time() - t_0))
-        self.path_callback()
+    def timer_callback(self, msg):
+        if msg: #only run if msg == True
+            t_0 = time.time()
+            self.get_map()
+            self.publish_map()
+            print('time: map: {:.5}'.format(time.time() - t_0))
+            self.path_callback()
 
     def path_callback(self):
         dist =  self.dist_2_goal(self.pose[:2], self.goal) 

@@ -6,7 +6,8 @@ import math
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Path, Odometry
-from geometry_msgs.msg import Point, Quaternion, PoseStamped 
+from geometry_msgs.msg import Point, Quaternion, PoseStamped
+from std_msgs.msg import Bool
 
 # Script imports
 from Utils.utils import from_odometry
@@ -29,8 +30,9 @@ class CONTROLLER(Node):
         # Instantiate objects
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback, 10)
         self.sub_odom  # prevent unused variable warning
-        self.sub_goal = self.create_subscription(PoseStamped,
-                                                                 '/goal', self.get_loops, 10)
+        self.sub_goal = self.create_subscription(PoseStamped, '/goal', self.get_loops, 10)
+        self.sub_waypoints_reached = self.create_subscription(Bool, '/Controller/msg', self.timer_callback(), 10)
+
         self.motor_right = Motor(22, 23)
         self.motor_left = Motor(27, 24)
 
@@ -51,13 +53,19 @@ class CONTROLLER(Node):
         self.min_angle = np.pi / 18  # Maximum offset angle from goal after correction
         self.look_ahead = 0.3 # How far ahead to look before finding a waypoint
         self.counter = 0
-        
+
+        self.safe_to_travel = False
+
+    def timer_callback(self, msg):
+        self.safe_to_travel = msg #only run main if the first waypoint has been reached
+
     def get_loops(self, msg):
-        print(self.pose)
-        self.goal = [1, 1]
-        self.drive(self.goal[1])
-        time.sleep(1)
-        self.t_0 = time.time()
+        if self.safe_to_travel:
+            print(self.pose)
+            self.goal = [1, 1]
+            self.drive(self.goal[1])
+            time.sleep(1)
+            self.t_0 = time.time()
 
     def main(self):
         '''
@@ -79,7 +87,8 @@ class CONTROLLER(Node):
     def listener_callback(self, msg):
         odom = from_odometry(msg)
         self.pose = [odom['x'], odom['y'], odom['theta']]
-        self.main()
+        if self.safe_to_travel:
+            self.main()
 
     def calculate_angle_from_goal(self):
         angle_to_rotate = self.angle_between_points(self.pose, self.goal) - self.pose[2]
