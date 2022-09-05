@@ -74,6 +74,7 @@ class CONTROLLER(Node):
             # Destination reached
             print('Goal achieved', self.pose[2])
             self.drive(0, 0)  # Stops robot
+            time.sleep(0.5)
 
     def listener_callback(self, msg):
         odom = from_odometry(msg)

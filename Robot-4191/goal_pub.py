@@ -9,7 +9,8 @@ class MinimalPublisher(Node):
 
     def __init__(self):
         super().__init__('goal_pub')
-        self.publisher_ = self.create_publisher(PoseStamped, '/goal', 10)
+        self.publisher_SPAM = self.create_publisher(PoseStamped, '/goal', 10)
+        self.publisher_Controller = self.create_publisher(PoseStamped, '/Controller/goal', 10)
         self.goal()
 
     def goal(self):
@@ -18,9 +19,14 @@ class MinimalPublisher(Node):
         while True:
             x = float(input("Print goal X in metres: "))
             y = float(input("Print goal Y in metres: "))
+            path = bool(input("Generate Path? "))
+            
             msg.pose.position.x = x #- 0.025 #goal - offset - contreller goal 
-            msg.pose.position.y = y #- 0.025
-            self.publisher_.publish(msg)
+            msg.pose.position.y = y #- 0.05
+            if path:
+                self.publisher_SPAM.publish(msg)
+            else:
+                self.publisher_Controller.publish(msg)
             print('Publishing goal', msg.pose.position)
 
 

@@ -29,10 +29,12 @@ class CONTROLLER(Node):
         # Instantiate objects
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback, 10)
         self.sub_odom  # prevent unused variable warning
-        self.sub_map = self.create_subscription(Path, '/SAM/path', self.get_goal, 10)
+        self.sub_map = self.create_subscription(Path, '/SAM/path', self.get_path, 10)
         self.sub_map
-        self.sub_turn = self.create_subscription(Int16, '/SAM/trun', self.turn_callback, 10)
-        self.sub_turn
+        # self.sub_turn = self.create_subscription(Int16, '/SAM/turn', self.turn_callback, 10)
+        # self.sub_turn
+        self.sub_goal = self.create_subscription(Path, '/Controller/goal', self.get_goal, 10)
+        self.sub_goal
         self.motor_right = Motor(22, 23)
         self.motor_left = Motor(27, 24)
 
@@ -49,8 +51,8 @@ class CONTROLLER(Node):
 
         # Params
         self.dist_from_goal = 0.05
-        self.min_angle = np.pi / 15  # Maximum offset angle from goal after correction
-        self.max_angle = self.min_angle * 0.5  # Maximum offset angle from goal before correction
+        self.max_angle = np.pi / 18  # Maximum offset angle from goal before correction
+        self.min_angle = self.max_angle * 0.5  # Maximum offset angle from goal after correction
         self.look_ahead = 0.4 # How far ahead to look before finding a waypoint
         self.i = 0
         self.turn = 0
@@ -63,7 +65,7 @@ class CONTROLLER(Node):
         for waypoint in msg.poses:
             self.waypoints.append([waypoint.pose.position.x, waypoint.pose.position.y])
             
-    def get_goal(self, msg):
+    def get_path(self, msg):
         #goal_x, goal_y = input('Enter destination: x, y').split()
         #goal_x, goal_y = [float(goal_x),float(goal_y)]
         #testing multiple waypoints now, then waypoints will be individually found via ROS
@@ -73,6 +75,8 @@ class CONTROLLER(Node):
             self.waypoints.pop(0)    
 
         self.goal = self.waypoints[0]
+    def get_goal(self, msg):
+        self.goal = [msg.pose.position.x, pose.position.y]
 
     def main(self):
         '''
@@ -122,8 +126,8 @@ class CONTROLLER(Node):
             angle_to_rotate -= 2 * np.pi
         return angle_to_rotate
 
-    def drive(self, ang_to_rotate=0, value=0.01):
-        curve = 0.3
+    def drive(self, ang_to_rotate=0, value=0.5):
+        curve = 0.1
         direction = np.sign(ang_to_rotate)
         if self.turn != 0 and abs(ang_to_rotate) > 1.5 and self.turn != direction:
             direction = direction *-1
@@ -134,16 +138,16 @@ class CONTROLLER(Node):
         elif direction == 1:
             # Turn right
             if abs(ang_to_rotate) < curve:
-                self.motor_left.stop()
-                self.motor_right.forward(value)
+                self.motor_left.forward(value)
+                self.motor_right.forward(0)
             else:
                 self.motor_left.backward(value)
                 self.motor_right.forward(value)
         elif direction == -1:
             # Turn left
             if abs(ang_to_rotate) < curve:
-                self.motor_left.forward(value)
-                self.motor_right.stop()
+                self.motor_left.forward(0)
+                self.motor_right.forward(value)
             else:
                 self.motor_left.forward(value)
                 self.motor_right.backward(value)

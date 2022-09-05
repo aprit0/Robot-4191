@@ -32,12 +32,12 @@ class ODOM(Node):
         self.encoder_right.steps = 0
 
         # Params
-        self.radius = 0.05468 * 0.5
-        self.dist_b_wheels = 0.2208 + 0.01# 0.05:- 0.0063 # Magic number for yaw
+        self.R = 0.05468 - 0.005
+        self.L = 0.2208 + 0.008# 0.05:- 0.0063 # Magic number for yaw
         self.encoder_steps = 12
         self.offset = 0.013333333#*1.0189 # gear offset likely 0.013
         self.step_theta = 2 * np.pi / self.encoder_steps # degrees motor has rotated
-        self.step_dist = self.radius * self.offset * self.step_theta
+        # self.step_dist = self.radius * self.offset * self.step_theta
        # self.step_dist = 2* self.radius*np.pi/self.encoder_steps
       #  self.step_dist = 2.5 / 2 * 2 * self.radius * np.pi / (11 * 90.895) # Depreciated but for reference
 
@@ -63,8 +63,6 @@ class ODOM(Node):
         self.publisher_.publish(msg)
         if time.time() - self.t_0 > 0.1:
             print('X, Y, Th', self.pose)
-            #print('Steps', self.encoder_left.steps)
-            self.t_0 = time.time()
 
     def get_pose(self):
         x_old = self.pose[0]
@@ -73,17 +71,20 @@ class ODOM(Node):
         dist_left = self.encoder_left.steps * 0.0002 # * self.step_dist
         dist_right = self.encoder_right.steps * 0.0002 # * self.step_dist
         delta_time = time.time() - self.last_time
+        vl = dist_left / delta_time
+        vr = dist_right / delta_time
 
-        x = x_old + ((dist_left + dist_right) / 2) * np.cos(theta_old)
-        y = y_old + ((dist_left + dist_right) / 2) * np.sin(theta_old)
-        theta = theta_old + (dist_right - dist_left) / ( self.dist_b_wheels)
+        dx = 0.5 * self.R * (vr + vl) * np.cos(theta_old)
+        dy = 0.5 * self.R * (vr + vl) * np.sin(theta_old)
+        dtheta = (self.R / self.L) * (vr - vl)
+
+        x = x_old + dx #* delta_time
+        y = y_old + dy #* delta_time
+        theta = theta_old + dtheta #* delta_time
         if theta > np.pi:
             theta -= 2*np.pi
-        elif theta < -np.pi:
+        elif theta <= -np.pi:
             theta += 2*np.pi
-        dx = (x - x_old) / delta_time
-        dy = (y - y_old) / delta_time
-        dtheta = (theta - theta_old) / delta_time
         # update pose and twist
         self.pose = [x, y, theta]
         self.twist = [dx, dy, dtheta]
@@ -91,8 +92,9 @@ class ODOM(Node):
         self.encoder_left.steps = 0
         self.encoder_right.steps = 0
         self.last_time = time.time()
-        self.wheel_left += dist_left
-        self.wheel_right += dist_right
+        self.wheel_left = dist_left
+        self.wheel_right = dist_right
+        print((self.wheel_left + self.wheel_right)/2)
 
 
 def main(args=None):
