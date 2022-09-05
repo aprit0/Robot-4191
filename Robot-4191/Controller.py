@@ -119,6 +119,8 @@ class CONTROLLER(Node):
                 # Destination reached
                 print('Goal achieved')
                 self.drive(0, 0)  # Stops robot
+                #10 second pause until next waypoint
+                time.sleep(10)
                 self.waypoint_reached = True
             else:
                 #look for next waypoint
