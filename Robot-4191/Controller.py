@@ -6,7 +6,8 @@ import math
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Path, Odometry
-from std_msgs.msg import Int16
+from std_msgs.msg import Int16, Bool
+
 
 # Script imports
 from Utils.utils import from_odometry
@@ -26,6 +27,11 @@ class CONTROLLER(Node):
 
     def __init__(self):
         super().__init__('controller')
+        #Publish that first waypoint has been reached
+        self.publisher_1 = self.create_publisher(Bool, '/Controller/msg', 10)
+        timer_period = 0.05  # 0.05 seconds
+        self.timer = self.create_timer(timer_period, self.timer_callback)
+
         # Instantiate objects
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback, 10)
         self.sub_odom  # prevent unused variable warning
@@ -56,7 +62,13 @@ class CONTROLLER(Node):
         self.look_ahead = 0.4 # How far ahead to look before finding a waypoint
         self.i = 0
         self.turn = 0
-    
+        self.waypoint_reached = False
+
+    def timer_callback(self):
+        #message turns to True when waypoint_reached is True
+        msg = self.waypoint_reached
+        self.publisher_1.publish(msg)
+
     def turn_callback(self, msg):
         self.turn = msg.data
         
@@ -107,6 +119,9 @@ class CONTROLLER(Node):
                 # Destination reached
                 print('Goal achieved')
                 self.drive(0, 0)  # Stops robot
+                #10 second pause until next waypoint
+                time.sleep(10)
+                self.waypoint_reached = True
             else:
                 #look for next waypoint
                 self.waypoints.pop(0)
