@@ -6,6 +6,7 @@ import math
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Path, Odometry
+from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Int16, Bool
 
 
@@ -29,8 +30,8 @@ class CONTROLLER(Node):
         super().__init__('controller')
         #Publish that first waypoint has been reached
         self.publisher_1 = self.create_publisher(Bool, '/Controller/msg', 10)
-        timer_period = 0.05  # 0.05 seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback)
+        # timer_period = 0.05  # 0.05 seconds
+        # self.timer = self.create_timer(timer_period, self.timer_callback)
 
         # Instantiate objects
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback, 10)
@@ -39,7 +40,7 @@ class CONTROLLER(Node):
         self.sub_map
         # self.sub_turn = self.create_subscription(Int16, '/SAM/turn', self.turn_callback, 10)
         # self.sub_turn
-        self.sub_goal = self.create_subscription(Path, '/Controller/goal', self.get_goal, 10)
+        self.sub_goal = self.create_subscription(PoseStamped, '/Controller/goal', self.get_goal, 10)
         self.sub_goal
         self.motor_right = Motor(22, 23)
         self.motor_left = Motor(27, 24)
@@ -66,7 +67,8 @@ class CONTROLLER(Node):
 
     def timer_callback(self):
         #message turns to True when waypoint_reached is True
-        msg = self.waypoint_reached
+        msg = Bool()
+        msg.data = self.waypoint_reached
         self.publisher_1.publish(msg)
 
     def turn_callback(self, msg):
@@ -87,8 +89,12 @@ class CONTROLLER(Node):
             self.waypoints.pop(0)    
 
         self.goal = self.waypoints[0]
+
+
     def get_goal(self, msg):
-        self.goal = [msg.pose.position.x, pose.position.y]
+        self.goal = [msg.pose.position.x, msg.pose.position.y]
+        print('Updated Goal: ', self.goal)
+
 
     def main(self):
         '''
@@ -119,9 +125,11 @@ class CONTROLLER(Node):
                 # Destination reached
                 print('Goal achieved')
                 self.drive(0, 0)  # Stops robot
-                #10 second pause until next waypoint
-                time.sleep(10)
-                self.waypoint_reached = True
+                if self.goal[0] > 0.4 and self.goal[1] > 0.4:
+                    print('Waiting at Goal')
+                    # 10 second pause until next waypoint
+                    self.waypoint_reached = True
+                    self.timer_callback()
             else:
                 #look for next waypoint
                 self.waypoints.pop(0)
@@ -142,7 +150,7 @@ class CONTROLLER(Node):
         return angle_to_rotate
 
     def drive(self, ang_to_rotate=0, value=0.5):
-        curve = 0.1
+        curve = 0.0
         direction = np.sign(ang_to_rotate)
         if self.turn != 0 and abs(ang_to_rotate) > 1.5 and self.turn != direction:
             direction = direction *-1

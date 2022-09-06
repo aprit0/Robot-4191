@@ -26,14 +26,14 @@ class MinimalPublisher(Node):
             y1 = float(input("Print first goal Y in metres: "))
             msg1.pose.position.x = x1 #- 0.025 #goal - offset - controller goal
             msg1.pose.position.y = y1 #- 0.05
-            self.publisher_Controller.publish(msg)
 
             #second waypoint with path planning
             x2 = float(input("Print second goal X in metres: "))
             y2 = float(input("Print second goal Y in metres: "))
             msg2.pose.position.x = x2
             msg2.pose.position.y = y2
-            self.publisher_SPAM.publish(msg)
+            self.publisher_Controller.publish(msg1)
+            self.publisher_SPAM.publish(msg2)
 
 
 def main(args=None):

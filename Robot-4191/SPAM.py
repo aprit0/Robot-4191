@@ -38,7 +38,7 @@ class SAM(Node):
         self.pub_map = self.create_publisher(OccupancyGrid, '/SAM/map', 10)
         self.pub_path = self.create_publisher(Path, '/SAM/path', 10)
         self.pub_turn = self.create_publisher(Int16, '/SAM/turn', 10)
-        self.sub_waypoints_reached = self.create_subscription(Bool, '/Controller/msg', self.timer_callback(), 10)
+        self.sub_waypoints_reached = self.create_subscription(Bool, '/Controller/msg', self.timer_callback, 10)
         timer_period = 0.1  # seconds
         # self.timer_map = self.create_timer(timer_period, self.timer_callback)
         # self.timer_path = self.create_timer(0.3, self.path_callback)
@@ -62,6 +62,7 @@ class SAM(Node):
         self.pose = [0.001, -0.15, np.pi/2]  # x, y, theta
         self.vel = [0.0, 0.0, 0.0]  # dx, dy, dtheta
         self.goal = [0.1, 0.1]  # x, y
+        self.loops = False # Single run only
         
         #Functions
         self.dist_2_goal = _points = lambda pose, goal: abs(math.dist(pose, goal))
@@ -88,13 +89,16 @@ class SAM(Node):
         self.t_1 = time.time()
 
     def timer_callback(self, msg):
-        if msg: #only run if msg == True
+        if msg and self.loops == False: #only run if msg == True
+            print('Waypoint reached, waiting 10.1s')
+            time.sleep(2)
             t_0 = time.time()
             self.get_map()
             self.publish_map()
             print('time: map: {:.5}'.format(time.time() - t_0))
             self.path_callback()
-
+            self.loops = True
+            
     def path_callback(self):
         dist =  self.dist_2_goal(self.pose[:2], self.goal) 
         print('================', dist)
@@ -138,7 +142,7 @@ class SAM(Node):
                         new_m[x_map, y_map] = 100
             # Add padding to points
             map_value = 5
-            pad_value = map_value * 3
+            pad_value = 99
             self.m = pad_map(new_m, map_value=map_value, pad_value=pad_value, null_value=100, min_blob=3)
             self.m[self.m == 0.0] = map_value
             self.m[self.m == 100] = None
@@ -150,20 +154,19 @@ class SAM(Node):
                 self.turn = 0
             
     def get_path(self):
-        map_arr = self.m
         # fix for translation
         print('G/P:', self.goal, self.pose)
         body_offset = 0.1
         pixel_x, pixel_y = self.pose_to_pixel([self.goal[0], self.goal[1]]) # + body_offset])
         origin_x, origin_y = self.pose_to_pixel([self.pose[0], self.pose[1]]) # + body_offset])
         print('Origins: ',origin_x, origin_y, pixel_x, pixel_y, ' || ', self.map_dimension/self.map_resolution)
-        map_arr[pixel_x, pixel_y] = 1
-        map_arr[pixel_x, pixel_y+1] = 1
-        map_arr[pixel_x, pixel_y+2] = 1
-        map_arr[pixel_x, pixel_y-1] = 1
-        map_arr[pixel_x, pixel_y-2] = 1
-
-        map_arr[origin_x, origin_y] = 1
+        self.m[pixel_x, pixel_y] = int(5)
+        self.m[pixel_x, pixel_y+1] = int(5)
+        self.m[pixel_x+1, pixel_y] = int(5)
+        self.m[pixel_x, pixel_y-1] = int(5)
+        self.m[pixel_x-1, pixel_y] = int(5)
+        self.m[origin_x, origin_y] = int(5)
+        map_arr = self.m
         print('Map value', map_arr[pixel_x, pixel_y])
         print('pose value: ', map_arr[origin_x, origin_y])
         astar = Astar(map_arr)
@@ -181,14 +184,14 @@ class SAM(Node):
     def pose_to_pixel(self, pose):
         # pose maps from - map_dimension : map_dimension
         map = lambda old_value, old_min, old_max, new_min, new_max: ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
-        pixel_x = map(pose[0], self.morigin + self.pose[0], -self.morigin + self.pose[0], (self.map_dimension/self.map_resolution)-1, 1)
-        pixel_y = map(pose[1], self.morigin + self.pose[1], -self.morigin + self.pose[1], (self.map_dimension/self.map_resolution)-1, 1)
+        pixel_x = map(pose[0], self.morigin + self.pose[0], -self.morigin + self.pose[0], (self.map_dimension/self.map_resolution)-1, 0)
+        pixel_y = map(pose[1], self.morigin + self.pose[1], -self.morigin + self.pose[1], (self.map_dimension/self.map_resolution)-1, 0)
         return int(pixel_x), int(pixel_y)
 
     def pixel_to_pose(self, pixel):
         map = lambda old_value, old_min, old_max, new_max, new_min: ((old_value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
-        pose_x = map(pixel[0], 1, (self.map_dimension/self.map_resolution)-1, self.morigin + self.pose[0], -self.morigin + self.pose[0])
-        pose_y = map(pixel[1], 1, (self.map_dimension/self.map_resolution)-1, self.morigin + self.pose[1], -self.morigin + self.pose[1])
+        pose_x = map(pixel[0], 0, (self.map_dimension/self.map_resolution)-1, self.morigin + self.pose[0], -self.morigin + self.pose[0])
+        pose_y = map(pixel[1], 0, (self.map_dimension/self.map_resolution)-1, self.morigin + self.pose[1], -self.morigin + self.pose[1])
         return pose_x, pose_y
 
     def generate_path(self, waypoints):
@@ -226,13 +229,7 @@ class SAM(Node):
 def main(args=None):
     rclpy.init(args=args)
     ros_node = SAM()
-    executor = rclpy.executors.MultiThreadedExecutor()
-    executor.add_node(ros_node)
-
-    try:
-        executor.spin()
-    except e:
-        print(e)
+    rclpy.spin(ros_node)
 
     rclpy.shutdown()
     rclpy.spin(ros_node)

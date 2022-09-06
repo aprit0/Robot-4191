@@ -47,12 +47,14 @@ def euclidian(input):
 
 def pad_map(arr, map_value = 0, pad_value=20, null_value=1, min_blob=2):
     pad_val = pad_value
-    pixel_pad = 2 # number of pixels to pad
+    pixel_pad = 7 # number of pixels to pad
     size = arr.shape[0]
-    heuristic = [[1, 0], [0, 1], [-1, 0], [0, -1]] #+ [[1,1], [1,-1], [-1,1], [-1,-1]]
+    heuristic = [[1,0], [-1, 0]]#[[1, 0], [0, 1], [-1, 0], [0, -1]] #+ [[1,1], [1,-1], [-1,1], [-1,-1]]
     h_0 = heuristic
     for i in range(1, pixel_pad):
         h_0.extend([[j[0] + np.sign(j[0]), j[1] + np.sign(j[1])] for j in heuristic])
+    h_0.extend([[0,-1], [0,1], [0, 2], [0, -2]])
+
     print(h_0)
     structure = np.array([
         [0, 1, 0],

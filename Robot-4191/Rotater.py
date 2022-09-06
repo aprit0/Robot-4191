@@ -31,7 +31,6 @@ class CONTROLLER(Node):
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback, 10)
         self.sub_odom  # prevent unused variable warning
         self.sub_goal = self.create_subscription(PoseStamped, '/goal', self.get_loops, 10)
-        self.sub_waypoints_reached = self.create_subscription(Bool, '/Controller/msg', self.timer_callback(), 10)
 
         self.motor_right = Motor(22, 23)
         self.motor_left = Motor(27, 24)
@@ -60,12 +59,11 @@ class CONTROLLER(Node):
         self.safe_to_travel = msg #only run main if the first waypoint has been reached
 
     def get_loops(self, msg):
-        if self.safe_to_travel:
-            print(self.pose)
-            self.goal = [1, 1]
-            self.drive(self.goal[1])
-            time.sleep(1)
-            self.t_0 = time.time()
+        print(self.pose)
+        self.goal = [1, 1]
+        self.drive(self.goal[1])
+        time.sleep(1)
+        self.t_0 = time.time()
 
     def main(self):
         '''
@@ -87,8 +85,7 @@ class CONTROLLER(Node):
     def listener_callback(self, msg):
         odom = from_odometry(msg)
         self.pose = [odom['x'], odom['y'], odom['theta']]
-        if self.safe_to_travel:
-            self.main()
+        self.main()
 
     def calculate_angle_from_goal(self):
         angle_to_rotate = self.angle_between_points(self.pose, self.goal) - self.pose[2]

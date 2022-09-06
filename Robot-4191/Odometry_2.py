@@ -33,7 +33,7 @@ class ODOM(Node):
 
         # Params
         self.R = 0.05468 - 0.005
-        self.L = 0.2208 + 0.008# 0.05:- 0.0063 # Magic number for yaw
+        self.L = 0.2208 + 0.007#0.008 = Thinks it has turned further than it has at waypoint 2, Magic number for yaw
         self.encoder_steps = 12
         self.offset = 0.013333333#*1.0189 # gear offset likely 0.013
         self.step_theta = 2 * np.pi / self.encoder_steps # degrees motor has rotated
@@ -74,13 +74,13 @@ class ODOM(Node):
         vl = dist_left / delta_time
         vr = dist_right / delta_time
 
-        dx = 0.5 * self.R * (vr + vl) * np.cos(theta_old)
-        dy = 0.5 * self.R * (vr + vl) * np.sin(theta_old)
         dtheta = (self.R / self.L) * (vr - vl)
+        theta = theta_old + dtheta #* delta_time
+        dx = 0.5 * self.R * (vr + vl) * np.cos(theta)
+        dy = 0.5 * self.R * (vr + vl) * np.sin(theta)
 
         x = x_old + dx #* delta_time
         y = y_old + dy #* delta_time
-        theta = theta_old + dtheta #* delta_time
         if theta > np.pi:
             theta -= 2*np.pi
         elif theta <= -np.pi:
