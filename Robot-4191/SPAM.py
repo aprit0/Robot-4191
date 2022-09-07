@@ -40,8 +40,8 @@ class SAM(Node):
         self.pub_turn = self.create_publisher(Int16, '/SAM/turn', 10)
         self.sub_waypoints_reached = self.create_subscription(Bool, '/Controller/msg', self.timer_callback, 10)
         timer_period = 0.1  # seconds
-        # self.timer_map = self.create_timer(timer_period, self.timer_callback)
-        # self.timer_path = self.create_timer(0.3, self.path_callback)
+        self.timer_map = self.create_timer(timer_period, self.timer_callback)
+        #self.timer_path = self.create_timer(0.3, self.path_callback)
 
         # Setup Lidar
         self.lidar = LidarX2("/dev/ttyUSB0")
@@ -88,16 +88,18 @@ class SAM(Node):
         self.vel = [odom['dx'], odom['dtheta']]
         self.t_1 = time.time()
 
-    def timer_callback(self, msg):
-        if msg and self.loops == False: #only run if msg == True
-            print('Waypoint reached, waiting 10.1s')
-            time.sleep(2)
-            t_0 = time.time()
-            self.get_map()
-            self.publish_map()
-            print('time: map: {:.5}'.format(time.time() - t_0))
-            self.path_callback()
-            self.loops = True
+    def timer_callback(self):#, msg):
+        #if msg and self.loops == False: #only run if msg == True
+        print('Waypoint reached, waiting 10.1s')
+        # time.sleep(10)
+        t_0 = time.time()
+        self.get_map()
+        self.publish_map()
+        input('Save map?')
+        np.save('map_1.npy', self.m)
+        print('time: map: {:.5}'.format(time.time() - t_0))
+        self.path_callback()
+        self.loops = True
             
     def path_callback(self):
         dist =  self.dist_2_goal(self.pose[:2], self.goal) 

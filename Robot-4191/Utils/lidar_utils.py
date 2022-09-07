@@ -53,7 +53,7 @@ def pad_map(arr, map_value = 0, pad_value=20, null_value=1, min_blob=2):
     h_0 = heuristic
     for i in range(1, pixel_pad):
         h_0.extend([[j[0] + np.sign(j[0]), j[1] + np.sign(j[1])] for j in heuristic])
-    h_0.extend([[0,-1], [0,1], [0, 2], [0, -2]])
+    h_0.extend([[0,-1], [0,1], [0, 2], [0, -2], [0, 3], [0, -3]])#, [1,1], [-1, -1], [0, -4], [0, 4], [0, 5], [0, -5], [-2, -2], [2, 2], [-3, -3], [4, 4], [-4, -4], [-5, -5], [5, 5], [-6, -6]])
 
     print(h_0)
     structure = np.array([
