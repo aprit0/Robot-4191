@@ -20,11 +20,6 @@ def add_map(rho, theta, map, strong_lines):
     return map, strong_lines
 
 def intersection(line1, line2):
-    """Finds the intersection of two lines given in Hesse normal form.
-
-    Returns closest integer pixel locations.
-    See https://stackoverflow.com/a/383527/5087436
-    """
     [rho1, theta1] = line1
     [rho2, theta2] = line2
     A = np.array([
