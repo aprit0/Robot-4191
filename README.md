@@ -21,7 +21,7 @@ https://docs.ros.org/en/foxy/Tutorials.html
 
 # Connect and run on pi
 ```  
-ssh +X pi@192.168.217.116  
+ssh -X pi@192.168.217.116  
 4191  
 ```
 ```
