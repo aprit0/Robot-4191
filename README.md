@@ -15,13 +15,9 @@
 # Tutorials
 https://docs.ros.org/en/foxy/Tutorials.html
 
-
-# TO-DO
-- *Done* [Connect ros machines](https://roboticsbackend.com/ros2-multiple-machines-including-raspberry-pi/)
-
 # Connect and run on pi
 ```  
-ssh +X pi@192.168.217.116  
+ssh -X pi@192.168.217.116  
 4191  
 ```
 ```
@@ -33,6 +29,30 @@ New Tab
 4191  
 python3 Motor_PWM.py  
 ```
-Text editor commands:  
+# Text editor commands:  
 ```gedit text.py```  
 ```nano text.py```  
+
+# Git commands:
+ditch your work: ```git stash```
+
+# How to test odometry:
+Terminal 1:
+``` python3 Odometry_2.py```
+Terminal 2:
+``` python3 Rotater.py```
+Terminal 3:
+``` python3 goal_pub.py```
+
+Process:
+1. Open terminals as above
+2. Enter any valid goal into goal_pub
+3. Robot will rotate one loop
+4. CLOSE Rotater.py
+5. Edit offset in Odometry_2.py self.L = number + offset
+6. rerun Odometry_2.py
+7. rerun Rotater.py
+8. Enter any valid goal into goal_pub
+
+Bugs:
+- Robot may do two or three loops caus its stoopid, dont panic
