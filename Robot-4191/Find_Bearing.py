@@ -5,12 +5,16 @@ import math
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
-from std_msgs.msg import Float32MultiArray, Int16
+from std_msgs.msg import Float32MultiArray, Int16, Header
+from geometry_msgs.msg import PoseStamped
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge # Package to convert between ROS and OpenCV Images
+
 
 # Script imports
 from Utils.utils import from_odometry
 
-class FIND_BEARING:
+class FIND_BEARING(Node):
     """
     This class is used to find the location of a bearing with respect to the world.
     Inputs:
@@ -30,34 +34,32 @@ class FIND_BEARING:
         super().__init__('find_bearing')
 
         # Publish the waypoint
-        self.publisher = self.create_publisher(Float32MultiArray, '/Bearing/msg', 10)
-
+        self.publisher = self.create_publisher(PoseStamped, '/Bearing/goal', 10)
+        self.pub_img = self.create_publisher(Image, 'video_frames', 10)
+        self.timer = self.create_timer(0.1, image_pub)
         # Subscriptions
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback1, 10)
         self.sub_odom  # prevent unused variable warning
-        # servo sub - must add servo code to subscribe to :))))
-        self.sub_servo = self.create_subscription(Servo_Angle, '/robot/servo_angle', self.listener_callback2, 10)
-        self.sub_servo  # prevent unused variable warning
 
         # Initialisations
+        self.cap = cv2.VideoCapture(0)
+        self.br = CvBridge()
+        
         self.servo = 0 # servo subscription
         self.servo_angle = 0 # servo value when images are taken
         self.pose = [0., 0., 0.] # odometry subscription
         self.robot_pose = [0., 0., 0.] # robot pose when images are taken
-        self.bearing_height_img = radius * 2 # radius get from alex
+        radius = 0.1 # ----------------------radius get from alex
+        self.bearing_height_img = radius * 2 
 
         # Constants
-        self.camera_matrix = [[], [], []] # ToDo: Fill it in
+        self.camera_matrix = [[], [], []] # -------------- ToDo: Fill it in
         self.focal_length = self.camera_matrix[0][0]
         self.half_image_width = self.camera_matrix[0][2]
         self.true_bearing_height = 0.019 # 19mm
         self.waypoint = [0, 0]
 
         self.countdown = 0
-
-        # take photo every 5 seconds # ToDo: change to take photos when we want it to - timed just for now
-        if time.time() - self.countdown > 5:
-            main()
 
     def camera(self):
         # Alex's code to take a photo and find the bearing in the image
@@ -88,7 +90,26 @@ class FIND_BEARING:
             bearing_radius = False
 
         return pixel_location, bearing_radius
+    
+    def image_pub(self):
+        """
+        Callback function.
+        This function gets called every 0.1 seconds.
+        """
+        # Capture frame-by-frame
+        # This method returns True/False as well
+        # as the video frame.
+        ret, frame = self.cap.read()
 
+        if ret == True:
+          # Publish the image.
+          # The 'cv2_to_imgmsg' method converts an OpenCV
+          # image to a ROS 2 image message
+          self.pub_img.publish(self.br.cv2_to_imgmsg(frame))
+
+        # Display the message on the console
+        self.get_logger().info('Publishing video frame')
+        
     def listener_callback1(self, msg):
         odom = from_odometry(msg)
         self.pose = [odom['x'], odom['y'], odom['theta']]
@@ -98,8 +119,10 @@ class FIND_BEARING:
 
     def waypoint_pub(self):
         # message turns to True when waypoint_reached is True
-        msg = Float32MultiArray()
-        msg.data = self.waypoint
+        msg = PoseStamped()
+        msg.header = Header()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.pose = self.waypoint
         self.publisher.publish(msg)
 
     def main(self):
@@ -132,9 +155,6 @@ class FIND_BEARING:
 
         # publish the waypoint
         self.waypoint_pub()
-
-        # reset the count
-        self.countdown = time.time()
 
 
 def main(args=None):
