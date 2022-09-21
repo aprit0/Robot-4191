@@ -51,7 +51,13 @@ class FIND_BEARING(Node):
         self.bearing_height_img = radius * 2 
 
         # Constants
-        self.camera_matrix = [[], [], []] # -------------- ToDo: Fill it in
+        pixel_width = 480
+        pixel_height = 320
+        x = pixel_width/2
+        y = pixel_height/2
+        pixel_size = pixel_width/(3.6736*10**(-3)) #meters
+        f = (3.04*10**(-3))/pixel_size #pixels
+        self.camera_matrix = [[f, 0, x], [0, f, y], [0, 0, 1]] 
         #self.focal_length = self.camera_matrix[0][0]
         #self.half_image_width = self.camera_matrix[0][2]
         self.true_bearing_height = 0.019 # 19mm
