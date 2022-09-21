@@ -72,7 +72,7 @@ class FIND_BEARING(Node):
         # for a single bearing
 
         # 1. take photo
-
+        ret, frame = self.cap.read()
         # 2. save current odom and servo angles
         self.robot_pose = self.pose
         self.servo_angle = self.servo
