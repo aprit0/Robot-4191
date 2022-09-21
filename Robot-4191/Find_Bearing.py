@@ -1,14 +1,13 @@
 import numpy as np
+import cv2
 import time
 import math
 # Ros imports
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
-from std_msgs.msg import Float32MultiArray, Int16, Header
+from std_msgs.msg import Int16MultiArray, Int16, Header
 from geometry_msgs.msg import PoseStamped
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge # Package to convert between ROS and OpenCV Images
 
 
 # Script imports
@@ -35,15 +34,14 @@ class FIND_BEARING(Node):
 
         # Publish the waypoint
         self.publisher = self.create_publisher(PoseStamped, '/Bearing/goal', 10)
-        self.pub_img = self.create_publisher(Image, 'video_frames', 10)
-        self.timer = self.create_timer(0.1, image_pub)
+        self.pub_img = self.create_publisher(Int16MultiArray, 'video_frames', 10)
+        self.timer = self.create_timer(0.1, self.image_pub)
         # Subscriptions
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback1, 10)
         self.sub_odom  # prevent unused variable warning
 
         # Initialisations
         self.cap = cv2.VideoCapture(0)
-        self.br = CvBridge()
         
         self.servo = 0 # servo subscription
         self.servo_angle = 0 # servo value when images are taken
@@ -54,8 +52,8 @@ class FIND_BEARING(Node):
 
         # Constants
         self.camera_matrix = [[], [], []] # -------------- ToDo: Fill it in
-        self.focal_length = self.camera_matrix[0][0]
-        self.half_image_width = self.camera_matrix[0][2]
+        #self.focal_length = self.camera_matrix[0][0]
+        #self.half_image_width = self.camera_matrix[0][2]
         self.true_bearing_height = 0.019 # 19mm
         self.waypoint = [0, 0]
 
@@ -85,9 +83,9 @@ class FIND_BEARING(Node):
         # bearing_radius = pretty self explanatory
 
         #in the event there are no bearings in the image
-        if no bearings found: # ToDO: fill in the variable
-            pixel_location = False
-            bearing_radius = False
+        # if no bearings found: # ToDO: fill in the variable
+        #    pixel_location = False
+        #    bearing_radius = False
 
         return pixel_location, bearing_radius
     
@@ -102,10 +100,12 @@ class FIND_BEARING(Node):
         ret, frame = self.cap.read()
 
         if ret == True:
-          # Publish the image.
-          # The 'cv2_to_imgmsg' method converts an OpenCV
-          # image to a ROS 2 image message
-          self.pub_img.publish(self.br.cv2_to_imgmsg(frame))
+            msg = Int16MultiArray()
+            img = np.array(frame).astype(np.int16)
+            print(img.shape)
+            img = img.flatten()
+            msg.data = [int(i) for i in img]
+            self.pub_img.publish(msg)
 
         # Display the message on the console
         self.get_logger().info('Publishing video frame')
