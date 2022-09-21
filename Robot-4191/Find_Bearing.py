@@ -13,6 +13,17 @@ from geometry_msgs.msg import PoseStamped
 # Script imports
 from Utils.utils import from_odometry
 
+def locate_bearings(image):
+    
+        #image = cv2.imread('image_{}.jpg'.format(n), 0)
+        image = cv2.rotate(image, cv2.ROTATE_180)        
+        edges = cv2.Canny(image=image, threshold1=300, threshold2=600) # Canny Edge Detection
+        kernel = np.ones((3,3),np.uint8)
+        edges = cv2.dilate(edges, kernel, iterations=4)
+        circles1 = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, 1, 20, \
+                    param1=20, param2=6, minRadius=5, maxRadius=30)
+        return circles1 #(x,y,radius)
+
 class FIND_BEARING(Node):
     """
     This class is used to find the location of a bearing with respect to the world.
@@ -84,9 +95,9 @@ class FIND_BEARING(Node):
         self.servo_angle = self.servo
 
         # do the camera crap
-
-        # outputs: pixel_location = center x position where 0 is the left side of the image to match my calcs
-        # bearing_radius = pretty self explanatory
+        circle = locate_bearings(frame)
+        pixel_location = circle[0] #x only
+        bearing_radius = circle[2]
 
         #in the event there are no bearings in the image
         # if no bearings found: # ToDO: fill in the variable
