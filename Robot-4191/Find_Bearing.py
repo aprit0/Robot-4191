@@ -8,6 +8,7 @@ from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Int16MultiArray, Int16, Header
 from geometry_msgs.msg import PoseStamped
+from gpiozero import AngularServo
 
 
 # Script imports
@@ -47,6 +48,7 @@ class FIND_BEARING(Node):
         self.publisher = self.create_publisher(PoseStamped, '/Bearing/goal', 10)
         self.pub_img = self.create_publisher(Int16MultiArray, 'video_frames', 10)
         self.timer = self.create_timer(0.1, self.image_pub)
+        self.timer = self.create_timer(0.1, self.main)
         # Subscriptions
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback1, 10)
         self.sub_odom  # prevent unused variable warning
@@ -54,12 +56,11 @@ class FIND_BEARING(Node):
         # Initialisations
         self.cap = cv2.VideoCapture(0)
         
-        self.servo = 0 # servo subscription
-        self.servo_angle = 0 # servo value when images are taken
+        self.servo = AngularServo(13, min_angle=-90, max_angle=90)
+        self.servo_angle = 0  # servo value when images are taken
+        self.servo_control()
         self.pose = [0., 0., 0.] # odometry subscription
         self.robot_pose = [0., 0., 0.] # robot pose when images are taken
-        radius = 0.1 # ----------------------radius get from alex
-        self.bearing_height_img = radius * 2 
 
         # Constants
         pixel_width = 480
@@ -69,8 +70,8 @@ class FIND_BEARING(Node):
         pixel_size = pixel_width/(3.6736*10**(-3)) #meters
         f = (3.04*10**(-3))/pixel_size #pixels
         self.camera_matrix = [[f, 0, x], [0, f, y], [0, 0, 1]] 
-        #self.focal_length = self.camera_matrix[0][0]
-        #self.half_image_width = self.camera_matrix[0][2]
+        self.focal_length = self.camera_matrix[0][0]
+        self.half_image_width = self.camera_matrix[0][2]
         self.true_bearing_height = 0.019 # 19mm
         self.waypoint = [0, 0]
 
@@ -92,17 +93,24 @@ class FIND_BEARING(Node):
         ret, frame = self.cap.read()
         # 2. save current odom and servo angles
         self.robot_pose = self.pose
-        self.servo_angle = self.servo
 
         # do the camera crap
-        circle = locate_bearings(frame)
-        pixel_location = circle[0] #x only
-        bearing_radius = circle[2]
-
+        circles = locate_bearings(frame)
+        print(circles)
+        try:
+            circles = circles[0]
+        except:
+            circles = []
         #in the event there are no bearings in the image
-        # if no bearings found: # ToDO: fill in the variable
-        #    pixel_location = False
-        #    bearing_radius = False
+        if len(circles) == 0: # ToDO: fill in the variable
+            pixel_location = False
+            bearing_radius = False
+        else:
+            circle = circles[0] # double array
+
+            pixel_location = circle[0] #x only
+            bearing_radius = circle[2]
+
 
         return pixel_location, bearing_radius
     
@@ -139,8 +147,28 @@ class FIND_BEARING(Node):
         msg = PoseStamped()
         msg.header = Header()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.pose = self.waypoint
+        msg.pose.position.x = self.waypoint[0]
+        msg.pose.position.y = self.waypoint[1]
         self.publisher.publish(msg)
+
+    def servo_control(self):
+        ang = np.interp(self.servo_angle, [-90, 55], [-90, 90])  
+        self.servo.angle = ang
+
+    def servo_search(self):
+        print('-------------------------------')
+        servo_max = 55
+        servo_min = -90
+        servo_step = 30 # degree
+        old_ang = self.servo_angle
+        print(old_ang)
+        if old_ang == servo_max:
+            old_ang = servo_min
+        else:
+            old_ang += servo_step
+        old_ang = old_ang if old_ang < servo_max else servo_max
+        self.servo_angle = old_ang
+        self.servo_control() 
 
     def main(self):
         """
@@ -148,19 +176,21 @@ class FIND_BEARING(Node):
         """
 
         # find the pixel location and size
-        pixel_location, bearing_radius = camera()
-
+        pixel_location, bearing_radius = self.camera()
         # break out of function if there are no bearings in the image
         if not pixel_location:
-            return
-
+            self.servo_search()
+            return 0
+        else:
+            self.servo_angle = 0
+            self.servo_control()
         bearing_height_img = 2*bearing_radius
 
         # find the pixel angle wrt center of camera image
         pixel_angle = np.arctan((self.half_image_width - pixel_location) / self.focal_length)  # if negative, to the right of center, else to the left
 
         # total angle wrt the world
-        angle_world = self.robot_bearing + self.servo_angle + pixel_angle
+        angle_world = self.robot_pose[2] + self.servo_angle + pixel_angle
         # check the sign for servo_bearing, could be negative
 
         dist_from_robot = (self.focal_length * self.true_bearing_height) / bearing_height_img

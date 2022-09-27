@@ -2,17 +2,18 @@
 
 from gpiozero import AngularServo, Servo
 from time import sleep
+import numpy as np
  
-servo=Servo(26)
-val=-1
+servo = AngularServo(13, min_angle=-90, max_angle=90)
+# servo=Servo(13)
+ang = 45
 while True:
-    servo.value = val
-    sleep(0.1)
-    val = val -2*val
-    #if val>1:
-    #    val=-1
+    ang = int(input('angle, [-90, 90]'))
+    ang = np.interp(ang, [-90, 55], [-90, 90])
+    # centre point = 35 degrees, positive is CCW, negative CW
+
+    servo.angle = int(ang)
  
-#servo = AngularServo(13, min_pulse_width = 0.00006, max_pulse_width=0.00023)
 #while True:
 #    servo.angle = -90
 #    sleep(2)

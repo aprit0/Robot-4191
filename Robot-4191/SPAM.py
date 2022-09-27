@@ -98,7 +98,7 @@ class SAM(Node):
         # input('Save map?')
         # np.save('map_1.npy', self.m)
         print('time: map: {:.5}'.format(time.time() - t_0))
-        self.path_callback()
+        # self.path_callback()
         self.loops = True
             
     def path_callback(self):

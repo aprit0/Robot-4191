@@ -162,15 +162,15 @@ class CONTROLLER(Node):
             # Turn right
             if abs(ang_to_rotate) < curve:
                 self.motor_left.forward(value)
-                self.motor_right.forward(0)
+                self.motor_right.backward(0)
             else:
                 self.motor_left.backward(value)
                 self.motor_right.forward(value)
         elif direction == -1:
             # Turn left
             if abs(ang_to_rotate) < curve:
-                self.motor_left.forward(0)
-                self.motor_right.forward(value)
+                self.motor_left.backward(0)
+                self.motor_right.backward(value)
             else:
                 self.motor_left.forward(value)
                 self.motor_right.backward(value)
