@@ -42,6 +42,8 @@ class CONTROLLER(Node):
         # self.sub_turn
         self.sub_goal = self.create_subscription(PoseStamped, '/Controller/goal', self.get_goal, 10)
         self.sub_goal
+        self.sub_bearing_goal = self.create_publisher(PoseStamped, '/Bearing/goal', self.get_goal, 10)
+        self.sub_bearing_goal
         self.motor_right = Motor(22, 23)
         self.motor_left = Motor(27, 24)
 
@@ -107,6 +109,9 @@ class CONTROLLER(Node):
         print(self.pose[0], self.pose[1], math.degrees(self.pose[2]))
         print('Dist2Goal: {:.3f} || Ang2Goal: {:.3f}'.format(dist_to_goal, math.degrees(angle_to_rotate)))
         if dist_to_goal > self.dist_from_goal:
+            #ensure camera doesn't look for a new waypoint
+            self.waypoint_reached = False
+            
             # Check if we need to rotate or drive straight
             if (self.state['Turn'] == 0 and abs(angle_to_rotate) > self.max_angle) or self.state['Turn'] == 1:
                 # Drive curvy
