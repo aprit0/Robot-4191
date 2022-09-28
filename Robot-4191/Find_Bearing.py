@@ -6,7 +6,7 @@ import math
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
-from std_msgs.msg import Int16MultiArray, Int16, Header
+from std_msgs.msg import Int16MultiArray, Int16, Header, Bool
 from geometry_msgs.msg import PoseStamped
 from gpiozero import AngularServo
 
@@ -47,11 +47,13 @@ class FIND_BEARING(Node):
         # Publish the waypoint
         self.publisher = self.create_publisher(PoseStamped, '/Bearing/goal', 10)
         self.pub_img = self.create_publisher(Int16MultiArray, 'video_frames', 10)
-        self.timer = self.create_timer(0.1, self.image_pub)
-        self.timer = self.create_timer(0.1, self.main)
+        #self.timer = self.create_timer(0.1, self.image_pub)
+        #self.timer = self.create_timer(0.1, self.main)
         # Subscriptions
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback1, 10)
         self.sub_odom  # prevent unused variable warning
+        self.sub_waypoint_reached = self.create_publisher(Bool, '/Controller/msg', self.main, 10)
+        self.sub_waypoint_reached
 
         # Initialisations
         self.cap = cv2.VideoCapture(0)
@@ -75,7 +77,7 @@ class FIND_BEARING(Node):
         self.true_bearing_height = 0.019 # 19mm
         self.waypoint = [0, 0]
 
-        self.countdown = 0
+        #self.countdown = 0
 
     def camera(self):
         # Alex's code to take a photo and find the bearing in the image
@@ -102,7 +104,7 @@ class FIND_BEARING(Node):
         except:
             circles = []
         #in the event there are no bearings in the image
-        if len(circles) == 0: # ToDO: fill in the variable
+        if len(circles) == 0:
             pixel_location = False
             bearing_radius = False
         else:
@@ -139,8 +141,8 @@ class FIND_BEARING(Node):
         odom = from_odometry(msg)
         self.pose = [odom['x'], odom['y'], odom['theta']]
 
-    def listener_callback2(self, msg):
-        self.servo = msg
+   # def listener_callback2(self, msg):
+   #     self.servo = msg
 
     def waypoint_pub(self):
         # message turns to True when waypoint_reached is True
@@ -157,7 +159,7 @@ class FIND_BEARING(Node):
 
     def servo_search(self):
         print('-------------------------------')
-        servo_max = 55
+        servo_max = 90 #55
         servo_min = -90
         servo_step = 30 # degree
         old_ang = self.servo_angle
@@ -174,7 +176,7 @@ class FIND_BEARING(Node):
         """
         Aim: take a photo of the surroundings, output the location of a bearing in the image
         """
-
+        self.image_pub()
         # find the pixel location and size
         pixel_location, bearing_radius = self.camera()
         # break out of function if there are no bearings in the image
@@ -199,6 +201,7 @@ class FIND_BEARING(Node):
 
         bearing_pose = [x, y]
         self.waypoint = bearing_pose
+        print(self.waypoint)
 
         # publish the waypoint
         self.waypoint_pub()
