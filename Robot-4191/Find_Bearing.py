@@ -201,7 +201,7 @@ class FIND_BEARING(Node):
 
         bearing_pose = [x, y]
         self.waypoint = bearing_pose
-        print(self.waypoint)
+        print('wapoint',self.waypoint)
 
         # publish the waypoint
         self.waypoint_pub()
