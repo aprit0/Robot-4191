@@ -143,7 +143,7 @@ class FIND_BEARING(Node):
 
     def listener_callback2(self, msg):
         print('msg: ', msg)
-        if msg == True:
+        if msg:
             self.main()
 
     def waypoint_pub(self):
