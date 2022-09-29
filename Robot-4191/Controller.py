@@ -42,7 +42,7 @@ class CONTROLLER(Node):
         # self.sub_turn
         self.sub_goal = self.create_subscription(PoseStamped, '/Controller/goal', self.get_goal, 10)
         self.sub_goal
-        self.sub_bearing_goal = self.create_publisher(PoseStamped, '/Bearing/goal', self.get_goal, 10)
+        self.sub_bearing_goal = self.create_subscription(PoseStamped, '/Bearing/goal', self.get_goal, 10)
         self.sub_bearing_goal
         self.motor_right = Motor(22, 23)
         self.motor_left = Motor(27, 24)

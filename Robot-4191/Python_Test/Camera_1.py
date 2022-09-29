@@ -9,7 +9,7 @@ while True:
         x = input('Take image with 0')
         if x == '0':
                 ret, frame = cap.read()
-                cv2.imwrite('test_img/image_{}_{}.jpg'.format(counter, time.time()), frame)
+                cv2.imwrite('test_img/image_{}_{}.jpg'.format(counter, '2'), frame) #time.time()), frame)
                 print('Took image')
                 counter += 1
 cap.release()

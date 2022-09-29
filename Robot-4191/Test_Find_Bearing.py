@@ -59,8 +59,8 @@ class FIND_BEARING(Node):
         self.servo = AngularServo(13, min_angle=-90, max_angle=90)
         self.servo_angle = 0  # servo value when images are taken
         self.servo_control()
-        self.pose = [0., 0., 0.] # odometry subscription
-        self.robot_pose = [0., 0., 0.] # robot pose when images are taken
+        self.pose = [0., 0., np.pi/2] # odometry subscription
+        self.robot_pose = [0., 0., np.pi/2] # robot pose when images are taken
 
         # Constants
         pixel_width = 480

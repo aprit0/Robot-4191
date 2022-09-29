@@ -52,7 +52,7 @@ class FIND_BEARING(Node):
         # Subscriptions
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback1, 10)
         self.sub_odom  # prevent unused variable warning
-        self.sub_waypoint_reached = self.create_publisher(Bool, '/Controller/msg', self.main, 10)
+        self.sub_waypoint_reached = self.create_subscription(Bool, '/Controller/msg', self.listener_callback2, 10)
         self.sub_waypoint_reached
 
         # Initialisations
@@ -69,7 +69,7 @@ class FIND_BEARING(Node):
         pixel_height = 320
         x = pixel_width/2
         y = pixel_height/2
-        pixel_size = pixel_width/(3.6736*10**(-3)) #meters
+        pixel_size = (3.6736*10**(-3))/pixel_width #meters
         f = (3.04*10**(-3))/pixel_size #pixels
         self.camera_matrix = [[f, 0, x], [0, f, y], [0, 0, 1]] 
         self.focal_length = self.camera_matrix[0][0]
@@ -141,8 +141,9 @@ class FIND_BEARING(Node):
         odom = from_odometry(msg)
         self.pose = [odom['x'], odom['y'], odom['theta']]
 
-   # def listener_callback2(self, msg):
-   #     self.servo = msg
+    def listener_callback2(self, msg):
+        if msg == True:
+            self.main()
 
     def waypoint_pub(self):
         # message turns to True when waypoint_reached is True
