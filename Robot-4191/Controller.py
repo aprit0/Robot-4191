@@ -30,8 +30,8 @@ class CONTROLLER(Node):
         super().__init__('controller')
         #Publish that first waypoint has been reached
         self.publisher_1 = self.create_publisher(Bool, '/Controller/msg', 10)
-        # timer_period = 0.05  # 0.05 seconds
-        # self.timer = self.create_timer(timer_period, self.timer_callback)
+        timer_period = 0.05  # 0.05 seconds
+        self.timer = self.create_timer(timer_period, self.timer_callback)
 
         # Instantiate objects
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback, 10)
@@ -65,7 +65,7 @@ class CONTROLLER(Node):
         self.look_ahead = 0.4 # How far ahead to look before finding a waypoint
         self.i = 0
         self.turn = 0
-        self.waypoint_reached = False
+        self.waypoint_reached = True #first waypoint is the current location
 
     def timer_callback(self):
         #message turns to True when waypoint_reached is True
