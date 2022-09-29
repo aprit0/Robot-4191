@@ -23,7 +23,13 @@ def locate_bearings(image):
         edges = cv2.dilate(edges, kernel, iterations=4)
         circles1 = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, 1, 20, \
                     param1=20, param2=6, minRadius=5, maxRadius=30)
-
+        if circles1 is not None:
+        for k in circles1[0,:]:
+            cv2.circle(image,(k[0],k[1]),k[2],(0,255,0), 3)
+        cv2.imshow('Canny Edge Detection', edges)
+        cv2.imshow('Image', image)
+        if (cv2.waitKey(0) & 0xFF) == ord('q'):
+        cv2.destroyAllWindows()
         return circles1 #(x,y,radius)
 
 class FIND_BEARING(Node):
