@@ -74,7 +74,7 @@ class FIND_BEARING(Node):
         pixel_height = 320
         x = pixel_width/2
         y = pixel_height/2
-        pixel_size = pixel_width/(3.6736*10**(-3)) #meters
+        pixel_size = (3.6736*10**(-3))/pixel_width #meters
         f = (3.04*10**(-3))/pixel_size #pixels
         self.camera_matrix = [[f, 0, x], [0, f, y], [0, 0, 1]] 
         self.focal_length = f #self.camera_matrix[0][0]
