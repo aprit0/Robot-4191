@@ -70,8 +70,8 @@ class FIND_BEARING(Node):
         pixel_size = pixel_width/(3.6736*10**(-3)) #meters
         f = (3.04*10**(-3))/pixel_size #pixels
         self.camera_matrix = [[f, 0, x], [0, f, y], [0, 0, 1]] 
-        self.focal_length = self.camera_matrix[0][0]
-        self.half_image_width = self.camera_matrix[0][2]
+        self.focal_length = f #self.camera_matrix[0][0]
+        self.half_image_width = x #self.camera_matrix[0][2]
         self.true_bearing_height = 0.019 # 19mm
         self.waypoint = [0, 0]
 
@@ -106,7 +106,7 @@ class FIND_BEARING(Node):
             pixel_location = False
             bearing_radius = False
         else:
-            circle = circles[0] # double array
+            circle = circles[-1] # double array - last circle is the closest...?
 
             pixel_location = circle[0] #x only
             bearing_radius = circle[2]
@@ -199,7 +199,7 @@ class FIND_BEARING(Node):
 
         bearing_pose = [x, y]
         self.waypoint = bearing_pose
-        print(self.waypoint)
+        print('waypoint: ',self.waypoint)
 
         # publish the waypoint
         self.waypoint_pub()
