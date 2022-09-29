@@ -18,7 +18,7 @@ def locate_bearings(image):
     
         #image = cv2.imread('image_{}.jpg'.format(n), 0)
         image = cv2.rotate(image, cv2.ROTATE_180)        
-        edges = cv2.Canny(image=image, threshold1=300, threshold2=600) # Canny Edge Detection
+        edges = cv2.Canny(image=image, threshold1=300, threshold2=750) # Canny Edge Detection
         kernel = np.ones((3,3),np.uint8)
         edges = cv2.dilate(edges, kernel, iterations=4)
         circles1 = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, 1, 20, \
