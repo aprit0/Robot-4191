@@ -60,7 +60,7 @@ class FIND_BEARING(Node):
         
         self.servo = AngularServo(13, min_angle=-90, max_angle=90)
         self.servo_angle = 0  # servo value when images are taken
-        self.servo_control()
+        #self.servo_control()
         self.pose = [0., 0., 0.] # odometry subscription
         self.robot_pose = [0., 0., 0.] # robot pose when images are taken
 
@@ -142,6 +142,7 @@ class FIND_BEARING(Node):
         self.pose = [odom['x'], odom['y'], odom['theta']]
 
     def listener_callback2(self, msg):
+        print('msg: ', msg)
         if msg == True:
             self.main()
 
@@ -182,11 +183,11 @@ class FIND_BEARING(Node):
         pixel_location, bearing_radius = self.camera()
         # break out of function if there are no bearings in the image
         if not pixel_location:
-            self.servo_search()
+            #self.servo_search()
             return 0
-        else:
-            self.servo_angle = 0
-            self.servo_control()
+        #else:
+        #    self.servo_angle = 0
+        #    self.servo_control()
         bearing_height_img = 2*bearing_radius
 
         # find the pixel angle wrt center of camera image
