@@ -23,6 +23,7 @@ def locate_bearings(image):
         edges = cv2.dilate(edges, kernel, iterations=4)
         circles1 = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, 1, 20, \
                     param1=20, param2=6, minRadius=5, maxRadius=30)
+
         return circles1 #(x,y,radius)
 
 class FIND_BEARING(Node):
@@ -96,6 +97,7 @@ class FIND_BEARING(Node):
 
         # do the camera crap
         circles = locate_bearings(frame)
+        
         print(circles)
         try:
             circles = circles[0]
@@ -168,22 +170,23 @@ class FIND_BEARING(Node):
             old_ang += servo_step
         old_ang = old_ang if old_ang < servo_max else servo_max
         self.servo_angle = old_ang
-        self.servo_control() 
+        #self.servo_control() 
 
     def main(self):
         """
         Aim: take a photo of the surroundings, output the location of a bearing in the image
         """
+        #self.servo_search()
         #self.image_pub()
         # find the pixel location and size
         pixel_location, bearing_radius = self.camera()
-        # break out of function if there are no bearings in the image
+        # break out of function if there are no bearings in the image        
         if not pixel_location:
-            self.servo_search()
+            #self.servo_search()
             return 0
-        else:
-            self.servo_angle = 0
-            self.servo_control()
+        #else:
+            #self.servo_angle = 0
+            #self.servo_control()
         bearing_height_img = 2*bearing_radius
 
         # find the pixel angle wrt center of camera image
