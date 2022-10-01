@@ -49,7 +49,7 @@ class FIND_BEARING(Node):
         self.pub_img = self.create_publisher(Int16MultiArray, 'video_frames', 10)
         #self.timer = self.create_timer(0.001, self.image_pub)
         #run main
-        self.timer = self.create_timer(0.001, self.main)
+        self.timer = self.create_timer(0.1, self.main)
         # Subscriptions
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback1, 10)
         self.sub_odom  # prevent unused variable warning
@@ -144,6 +144,7 @@ class FIND_BEARING(Node):
         self.pose = [odom['x'], odom['y'], odom['theta']]
 
     def listener_callback2(self, msg):
+        print('I heard: ',msg)
         if msg:
             self.goal_reached = True
 
@@ -181,7 +182,9 @@ class FIND_BEARING(Node):
         """
         #only run if the goal is reached
         if not self.goal_reached:
+            print('False')
             return 0
+        print('Searching')
         self.image_pub()
         # find the pixel location and size
         pixel_location, bearing_radius = self.camera()
@@ -207,7 +210,7 @@ class FIND_BEARING(Node):
 
         bearing_pose = [x, y]
         self.goal = bearing_pose
-        print('wapoint',self.waypoint)
+        print('goal',self.goal)
 
         # publish the waypoint
         self.goal_pub()

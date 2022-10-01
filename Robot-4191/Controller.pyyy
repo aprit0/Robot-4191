@@ -130,11 +130,11 @@ class CONTROLLER(Node):
                 # Destination reached
                 print('Goal achieved')
                 self.drive(0, 0)  # Stops robot
-                #if self.goal[0] > 0.4 and self.goal[1] > 0.4:
+                if self.goal[0] > 0.4 and self.goal[1] > 0.4:
                     #print('Waiting at Goal')
                     # 10 second pause until next waypoint
-                self.goal_reached = True
-                self.publish_message()
+                    self.goal_reached = True
+                    self.publish_message()
             else:
                 #look for next waypoint
                 self.waypoints.pop(0)
