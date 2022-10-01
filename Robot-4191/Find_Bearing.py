@@ -44,16 +44,17 @@ class FIND_BEARING(Node):
     def __init__(self):
         super().__init__('find_bearing')
 
-        # Publish the waypoint
+        # Publish the goal
         self.publisher = self.create_publisher(PoseStamped, '/Bearing/goal', 10)
         self.pub_img = self.create_publisher(Int16MultiArray, 'video_frames', 10)
-        #self.timer = self.create_timer(0.1, self.image_pub)
-        #self.timer = self.create_timer(0.1, self.main)
+        #self.timer = self.create_timer(0.001, self.image_pub)
+        #run main
+        self.timer = self.create_timer(0.001, self.main)
         # Subscriptions
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback1, 10)
         self.sub_odom  # prevent unused variable warning
-        self.sub_waypoint_reached = self.create_subscription(Bool, '/Controller/msg', self.listener_callback2, 10)
-        self.sub_waypoint_reached
+        self.sub_goal_reached = self.create_subscription(Bool, '/Controller/msg', self.listener_callback2, 10)
+        self.sub_goal_reached
 
         # Initialisations
         self.cap = cv2.VideoCapture(0)
@@ -63,6 +64,7 @@ class FIND_BEARING(Node):
         #self.servo_control()
         self.pose = [0., 0., 0.] # odometry subscription
         self.robot_pose = [0., 0., 0.] # robot pose when images are taken
+        self.goal_reached = True
 
         # Constants
         pixel_width = 480
@@ -75,8 +77,8 @@ class FIND_BEARING(Node):
         self.focal_length = self.camera_matrix[0][0]
         self.half_image_width = self.camera_matrix[0][2]
         self.true_bearing_height = 0.019 # 19mm
-        self.waypoint = [0, 0]
-
+        self.goal = [0, 0]
+    
         #self.countdown = 0
 
     def camera(self):
@@ -142,17 +144,16 @@ class FIND_BEARING(Node):
         self.pose = [odom['x'], odom['y'], odom['theta']]
 
     def listener_callback2(self, msg):
-        print('msg: ', msg)
         if msg:
-            self.main()
+            self.goal_reached = True
 
-    def waypoint_pub(self):
+    def goal_pub(self):
         # message turns to True when waypoint_reached is True
         msg = PoseStamped()
         msg.header = Header()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.pose.position.x = self.waypoint[0]
-        msg.pose.position.y = self.waypoint[1]
+        msg.pose.position.x = self.goal[0]
+        msg.pose.position.y = self.goal[1]
         self.publisher.publish(msg)
 
     def servo_control(self):
@@ -178,6 +179,9 @@ class FIND_BEARING(Node):
         """
         Aim: take a photo of the surroundings, output the location of a bearing in the image
         """
+        #only run if the goal is reached
+        if not self.goal_reached:
+            return 0
         self.image_pub()
         # find the pixel location and size
         pixel_location, bearing_radius = self.camera()
@@ -202,11 +206,14 @@ class FIND_BEARING(Node):
         y = dist_from_robot * np.sin(angle_world) + self.robot_pose[1]
 
         bearing_pose = [x, y]
-        self.waypoint = bearing_pose
+        self.goal = bearing_pose
         print('wapoint',self.waypoint)
 
         # publish the waypoint
-        self.waypoint_pub()
+        self.goal_pub()
+        
+        #don't run main again until the next goal is reached
+        self.goal_reached = False
 
 
 def main(args=None):
