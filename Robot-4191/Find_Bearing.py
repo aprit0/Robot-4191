@@ -48,7 +48,7 @@ def locate_bearings(image):
             for c2 in circles2[0,:]:
                 dist = np.sqrt(pow(c1[0]-c2[0], 2) + pow(c1[1]-c2[1], 2))
                 if dist < (c1[2]+c2[2])/2:
-                    cv2.circle(image,(c2[0],c2[1]),c2[2],(255,0,255), 2)
+                   # cv2.circle(image,(c2[0],c2[1]),c2[2],(255,0,255), 2)
                     bearing_locations.append(c2)
     #cv2.imshow('Canny Edge Detection', edges)
     #cv2.imshow('Image', image)
@@ -141,8 +141,9 @@ class FIND_BEARING(Node):
             pixel_location = False
             bearing_radius = False
         else:
-            circle = circles[0] # double array
-
+            print('circles', circles)
+           # circle = circles[0] # double array
+            circle = circles
             pixel_location = circle[0] #x only
             bearing_radius = circle[2]
 
