@@ -25,6 +25,8 @@ def imply_lines(im, show=False):
     perp_lines = get_perpendicular_lines(inter_lines)
     print('inter_lines:', inter_lines)
     print('perp_lines', perp_lines)
+    while len(perp_lines) > 4:
+        perp_lines.pop(-1)
     for rho, theta in perp_lines:
         _, map = check_map(rho, theta, map, draw=True)
     map1 = np.clip(map + im, 0, 100)
@@ -141,16 +143,21 @@ def intersection(line1, line2, ):
         [np.cos(theta2), np.sin(theta2)]
     ])
     b = np.array([[rho1], [rho2]])
-    x0, y0 = np.linalg.solve(A, b)
-    x0, y0 = int(np.round(x0)), int(np.round(y0))
-    theta1 = theta1 if theta1 != 0 else theta1 + 1e-10
-    theta2 = theta2 if theta2 != 0 else theta2 + 1e-10
-    m1 = -(np.cos(theta1) / np.sin(theta1))
-    m2 = -(np.cos(theta2) / np.sin(theta2))
-    if not math.isinf(m1) and not math.isinf(m2):
-        m0 = abs(math.atan(abs(m2 - m1) / (1 + m2 * m1))) * (180 / np.pi)
-        return [x0, y0, m0]
-    else:
+    print(A, b)
+    try:
+        x0, y0 = np.linalg.solve(A, b)
+        x0, y0 = int(np.round(x0)), int(np.round(y0))
+        theta1 = theta1 if theta1 != 0 else theta1 + 1e-10
+        theta2 = theta2 if theta2 != 0 else theta2 + 1e-10
+        m1 = -(np.cos(theta1) / np.sin(theta1))
+        m2 = -(np.cos(theta2) / np.sin(theta2))
+        if not math.isinf(m1) and not math.isinf(m2):
+            m0 = abs(math.atan(abs(m2 - m1) / (1 + m2 * m1))) * (180 / np.pi)
+            return [x0, y0, m0]
+        else:
+            return []
+    except Exception as e:
+        print(e)
         return []
 
 
@@ -167,16 +174,17 @@ class LINE(Node):
 
     def __init__(self):
         super().__init__('LINE')
-        # self.sub_goal = self.create_subscription(OccupancyGrid, '/SAM/map', self.get_lines, 10)
-        self.pub_map1 = self.create_publisher(OccupancyGrid, '/SAM/map', 10)
-        self.timer_map = self.create_timer(0.5, self.get_lines)
+        self.sub_goal = self.create_subscription(OccupancyGrid, '/SAM/map', self.get_lines, 10)
+        self.pub_map1 = self.create_publisher(OccupancyGrid, '/LINES/map', 10)
+        # self.timer_map = self.create_timer(0.5, self.get_lines)
 
-    def get_lines(self):#, msg):
-        map = np.load('map.npy').astype(np.uint8)
-        # map = np.array(msg.data)
-        width = int(map.shape[0])
-        # map = map.reshape((width, width))
+    def get_lines(self, msg):
+        # map = np.load('map.npy').astype(np.uint8)
+        map = np.array(msg.data)
+        width = int(map.shape[0] ** 0.5)
+        map = map.reshape((width, width)).astype('uint8')
         t_0 = time.time()
+        print(map.shape)
         new_map = imply_lines(map, show=False)
         print('TIME: ', time.time() - t_0)
         self.publish_map(new_map)

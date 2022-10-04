@@ -66,6 +66,7 @@ class CONTROLLER(Node):
         self.i = 0
         self.turn = 0
         self.goal_reached = True #first goal is the current location
+        self.begin = False
 
     def publish_message(self):
         #message turns to True when goal_reached is True
@@ -128,13 +129,14 @@ class CONTROLLER(Node):
             # Goal reached
             if len(self.waypoints) == 1 or len(self.waypoints) == 0:
                 # Destination reached
-                print('Goal achieved')
-                self.drive(0, 0)  # Stops robot
-                #if self.goal[0] > 0.4 and self.goal[1] > 0.4:
-                    #print('Waiting at Goal')
-                    # 10 second pause until next waypoint
-                self.goal_reached = True
-                self.publish_message()
+                if time.time() - self.waiting > 1:
+                    self.drive(ang_to_rotate=-1)
+                else:
+                    print('Goal achieved')
+                    self.drive(0, 0)  # Stops robot
+                    self.goal_reached = True
+                    self.publish_message()
+                    self.waiting = time.time()
             else:
                 #look for next waypoint
                 self.waypoints.pop(0)
@@ -143,6 +145,9 @@ class CONTROLLER(Node):
     def listener_callback(self, msg):
         odom = from_odometry(msg)
         self.pose = [odom['x'], odom['y'], odom['theta']]
+        if not self.begin:
+            input('Welcome to aLpha Bot, are you ready to fuk shit up?')
+            self.begin = True
         self.main()
 
     def calculate_angle_from_goal(self):
