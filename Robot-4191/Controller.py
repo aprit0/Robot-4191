@@ -130,7 +130,7 @@ class CONTROLLER(Node):
             if len(self.waypoints) == 1 or len(self.waypoints) == 0:
                 # Destination reached
                 if time.time() - self.waiting > 1:
-                    self.drive(ang_to_rotate=-1)
+                    self.drive(ang_to_rotate=-1, value=0.1)
                     self.waiting = -1
                 else:
                     print('Goal achieved')
