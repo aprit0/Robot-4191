@@ -14,16 +14,47 @@ from gpiozero import AngularServo
 # Script imports
 from Utils.utils import from_odometry
 
-def locate_bearings(image):
+# def locate_bearings(image):
     
-        #image = cv2.imread('image_{}.jpg'.format(n), 0)
-        image = cv2.rotate(image, cv2.ROTATE_180)        
-        edges = cv2.Canny(image=image, threshold1=300, threshold2=750) # Canny Edge Detection
-        kernel = np.ones((3,3),np.uint8)
-        edges = cv2.dilate(edges, kernel, iterations=4)
-        circles1 = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, 1, 20, \
+#         #image = cv2.imread('image_{}.jpg'.format(n), 0)
+#         image = cv2.rotate(image, cv2.ROTATE_180)        
+#         edges = cv2.Canny(image=image, threshold1=300, threshold2=750) # Canny Edge Detection
+#         kernel = np.ones((3,3),np.uint8)
+#         edges = cv2.dilate(edges, kernel, iterations=4)
+#         circles1 = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, 1, 20, \
+#                     param1=20, param2=6, minRadius=5, maxRadius=30)
+#         return circles1 #(x,y,radius)
+
+def locate_bearings(image):
+    import cv2
+    import numpy as np
+    bearing_locations = []
+    #image = cv2.imread('image_{}.jpg'.format(n), 0)
+    image = cv2.rotate(image, cv2.ROTATE_180)        
+    edges = cv2.Canny(image=image, threshold1=300, threshold2=750) # Canny Edge Detection
+    edges2 = cv2.Canny(image=image, threshold1=200, threshold2=90)
+
+    kernel = np.ones((3,3),np.uint8)
+    edges = cv2.dilate(edges, kernel, iterations=4)
+    edges2 = cv2.dilate(edges2, kernel, iterations=1)
+
+    circles1 = cv2.HoughCircles(edges, cv2.HOUGH_GRADIENT, 1, 20, \
                     param1=20, param2=6, minRadius=5, maxRadius=30)
-        return circles1 #(x,y,radius)
+    circles2 = cv2.HoughCircles(edges2, cv2.HOUGH_GRADIENT, 1, 26, \
+                        param1=100, param2=8.5, minRadius=5, maxRadius=15)
+
+    if circles2 is not None and circles1 is not None:
+        for c1 in circles1[0,:]:
+            for c2 in circles2[0,:]:
+                dist = np.sqrt(pow(c1[0]-c2[0], 2) + pow(c1[1]-c2[1], 2))
+                if dist < (c1[2]+c2[2])/2:
+                    cv2.circle(image,(c2[0],c2[1]),c2[2],(255,0,255), 2)
+                    bearing_locations.append(c2)
+    #cv2.imshow('Canny Edge Detection', edges)
+    #cv2.imshow('Image', image)
+    if (cv2.waitKey(0) & 0xFF) == ord('q'):
+        cv2.destroyAllWindows()
+    return bearing_locations #, image
 
 class FIND_BEARING(Node):
     """
