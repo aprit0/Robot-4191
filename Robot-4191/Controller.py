@@ -131,12 +131,14 @@ class CONTROLLER(Node):
                 # Destination reached
                 if time.time() - self.waiting > 1:
                     self.drive(ang_to_rotate=-1)
+                    self.waiting = -1
                 else:
                     print('Goal achieved')
                     self.drive(0, 0)  # Stops robot
                     self.goal_reached = True
                     self.publish_message()
-                    self.waiting = time.time()
+                    if self.waiting != -1:
+                        self.waiting = time.time()
             else:
                 #look for next waypoint
                 self.waypoints.pop(0)
@@ -144,6 +146,7 @@ class CONTROLLER(Node):
 
     def listener_callback(self, msg):
         odom = from_odometry(msg)
+        self.waiting = 0
         self.pose = [odom['x'], odom['y'], odom['theta']]
         if not self.begin:
             input('Welcome to aLpha Bot, are you ready to fuk shit up?')
