@@ -67,6 +67,7 @@ class CONTROLLER(Node):
         self.turn = 0
         self.goal_reached = True #first goal is the current location
         self.begin = False
+        self.waiting = 0
 
     def publish_message(self):
         #message turns to True when goal_reached is True
@@ -95,8 +96,12 @@ class CONTROLLER(Node):
 
 
     def get_goal(self, msg):
+        self.waiting = 0
         self.goal = [msg.pose.position.x, msg.pose.position.y]
         print('Updated Goal: ', self.goal)
+        if not self.begin:
+            input('Welcome to aLpha Bot, are you ready to fuk shit up?')
+            self.begin = True
 
 
     def main(self):
@@ -128,17 +133,18 @@ class CONTROLLER(Node):
         else:
             # Goal reached
             if len(self.waypoints) == 1 or len(self.waypoints) == 0:
+                print('waiting', self.waiting)
+                self.goal_reached = True
                 # Destination reached
-                if time.time() - self.waiting > 1:
-                    self.drive(ang_to_rotate=-1, value=0.1)
-                    self.waiting = -1
+                if self.begin and self.waiting > 0 and time.time() - self.waiting > 1:
+                    self.drive(ang_to_rotate=1, value=0.001)
                 else:
                     print('Goal achieved')
                     self.drive(0, 0)  # Stops robot
-                    self.goal_reached = True
-                    self.publish_message()
-                    if self.waiting != -1:
+                    if self.waiting == 0:
+                        self.publish_message()
                         self.waiting = time.time()
+                print('waiting', self.waiting)
             else:
                 #look for next waypoint
                 self.waypoints.pop(0)
@@ -146,11 +152,7 @@ class CONTROLLER(Node):
 
     def listener_callback(self, msg):
         odom = from_odometry(msg)
-        self.waiting = 0
         self.pose = [odom['x'], odom['y'], odom['theta']]
-        if not self.begin:
-            input('Welcome to aLpha Bot, are you ready to fuk shit up?')
-            self.begin = True
         self.main()
 
     def calculate_angle_from_goal(self):

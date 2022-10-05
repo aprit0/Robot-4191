@@ -146,11 +146,15 @@ class FIND_BEARING(Node):
             circle = circles
             pixel_location = circle[0] #x only
             bearing_radius = circle[2]
+            x = 640 - circle[0]
+            y = 480 - circle[1]
+            r = bearing_radius
+            cv2.circle(frame,(int(x), int(y)), int(r),(255,0,255), 2)
 
 
-        return pixel_location, bearing_radius
+        return frame, pixel_location, bearing_radius
     
-    def image_pub(self):
+    def image_pub(self,frame):
         """
         Callback function.
         This function gets called every 0.1 seconds.
@@ -158,15 +162,13 @@ class FIND_BEARING(Node):
         # Capture frame-by-frame
         # This method returns True/False as well
         # as the video frame.
-        ret, frame = self.cap.read()
 
-        if ret == True:
-            msg = Int16MultiArray()
-            img = np.array(frame).astype(np.int16)
-            print(img.shape)
-            img = img.flatten()
-            msg.data = [int(i) for i in img]
-            self.pub_img.publish(msg)
+        msg = Int16MultiArray()
+        img = np.array(frame).astype(np.int16)
+        print(img.shape)
+        img = img.flatten()
+        msg.data = [int(i) for i in img]
+        self.pub_img.publish(msg)
 
         # Display the message on the console
         self.get_logger().info('Publishing video frame')
@@ -217,9 +219,8 @@ class FIND_BEARING(Node):
             print('False')
             return 0
         print('Searching')
-        self.image_pub()
         # find the pixel location and size
-        pixel_location, bearing_radius = self.camera()
+        frame, pixel_location, bearing_radius = self.camera()
         # break out of function if there are no bearings in the image
         if not pixel_location:
             #self.servo_search()
@@ -240,15 +241,17 @@ class FIND_BEARING(Node):
         x = dist_from_robot * np.cos(angle_world) + self.robot_pose[0]
         y = dist_from_robot * np.sin(angle_world) + self.robot_pose[1]
 
-        bearing_pose = [x, y]
+        bearing_pose = [y, x]
         self.goal = bearing_pose
         print('goal',self.goal)
-
-        # publish the waypoint
-        self.goal_pub()
-        
-        #don't run main again until the next goal is reached
-        self.goal_reached = False
+        goal_limits = 1.5
+        self.image_pub(frame)
+        if goal_limits > self.goal[0] > -goal_limits and goal_limits > self.goal[1] > -goal_limits:
+            # publish the waypoint
+            self.goal_pub()
+            
+            #don't run main again until the next goal is reached
+            self.goal_reached = False
 
 
 def main(args=None):
