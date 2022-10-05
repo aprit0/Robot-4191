@@ -21,6 +21,7 @@ class MinimalSubscriber(Node):
     def listener_callback(self, msg):
         frame = msg.data
         frame = np.reshape(frame,(480, 640, 3))
+        frame = np.rot90(frame, 2)
         plt.imshow(frame)
         plt.show()
 
