@@ -76,7 +76,7 @@ class FIND_BEARING(Node):
         super().__init__('find_bearing')
 
         # Publish the goal
-        self.publisher = self.create_publisher(PoseStamped, '/Bearing/goal', 10)
+        self.publisher = self.create_publisher(PoseStamped, '/goal', 10)
         self.pub_img = self.create_publisher(Int16MultiArray, 'video_frames', 10)
         #self.timer = self.create_timer(0.001, self.image_pub)
         #run main
@@ -124,8 +124,9 @@ class FIND_BEARING(Node):
         # not sure which method is best as I dont know how wide the camera view is, but pls output values
         # for a single bearing
 
-        # 1. take photo
-        ret, frame = self.cap.read()
+        for i in range(10):
+            # 1. take photo
+            ret, frame = self.cap.read()
         # 2. save current odom and servo angles
         self.robot_pose = self.pose
 
@@ -180,6 +181,7 @@ class FIND_BEARING(Node):
     def listener_callback2(self, msg):
         print('I heard: ',msg)
         if msg:
+            self.goal = None
             self.goal_reached = True
 
     def goal_pub(self):
@@ -213,21 +215,30 @@ class FIND_BEARING(Node):
     def main(self):
         """
         Aim: take a photo of the surroundings, output the location of a bearing in the image
+        Conditions:
+        if goal_reached:
+        - Find new bearing
+        if goal_not reached and goal found:
+        - Update goal if new value is assumed to be same
+        if goal not reached and goal not found:
+        - return 0
         """
         #only run if the goal is reached
         if not self.goal_reached:
             print('False')
             return 0
+        
         print('Searching')
         # find the pixel location and size
         frame, pixel_location, bearing_radius = self.camera()
         # break out of function if there are no bearings in the image
         if not pixel_location:
-            #self.servo_search()
+            print('we there yet', self.goal_reached)
+            if self.goal_reached:
+                self.goal = [100., 100.]
+                self.goal_pub()
+
             return 0
-        #else:
-        #    self.servo_angle = 0
-        #    self.servo_control()
         bearing_height_img = 2*bearing_radius
 
         # find the pixel angle wrt center of camera image
@@ -237,21 +248,32 @@ class FIND_BEARING(Node):
         angle_world = self.robot_pose[2] + self.servo_angle + pixel_angle
         # check the sign for servo_bearing, could be negative
 
-        dist_from_robot = (self.focal_length * self.true_bearing_height) / bearing_height_img
+        offset_dist = 0.15
+        dist_from_robot = ((self.focal_length * self.true_bearing_height) / bearing_height_img) + offset_dist
         x = dist_from_robot * np.cos(angle_world) + self.robot_pose[0]
         y = dist_from_robot * np.sin(angle_world) + self.robot_pose[1]
 
-        bearing_pose = [y, x]
-        self.goal = bearing_pose
-        print('goal',self.goal)
-        goal_limits = 1.5
-        self.image_pub(frame)
-        if goal_limits > self.goal[0] > -goal_limits and goal_limits > self.goal[1] > -goal_limits:
+        bearing_pose = [x, y]
+        # check if new goal is similar to old goal
+        min_dist = 0.1
+        if self.goal == None:
+            dist_between_goal = 100
+        else:
+            dist_between_goal =  math.dist(bearing_pose,self.goal) 
+        if dist_between_goal < min_dist or self.goal == None:
+            self.goal = bearing_pose
+            print('goal',self.goal)
+            self.image_pub(frame)
             # publish the waypoint
             self.goal_pub()
             
             #don't run main again until the next goal is reached
-            self.goal_reached = False
+            # lol no
+            # self.goal_reached = False
+            return 0
+        else:
+            print('goal', self.goal, bearing_pose)
+            print('dist', dist_between_goal, min_dist)
 
 
 def main(args=None):

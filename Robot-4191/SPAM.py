@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Int16, Bool
+from std_msgs.msg import Int16, Bool, Int32MultiArray
 from nav_msgs.msg import Path, OccupancyGrid, Odometry
 from geometry_msgs.msg import Point, Quaternion, Pose, PoseStamped
 import math
@@ -37,11 +37,12 @@ class SAM(Node):
                                                  '/robot/odom', self.update_odom, 10)
         self.pub_map = self.create_publisher(OccupancyGrid, '/SAM/map', 10)
         self.pub_path = self.create_publisher(Path, '/SAM/path', 10)
-        self.pub_turn = self.create_publisher(Int16, '/SAM/turn', 10)
-        self.sub_waypoints_reached = self.create_subscription(Bool, '/Controller/msg', self.timer_callback, 10)
+        self.pub_turn = self.create_publisher(Int32MultiArray, '/SAM/turn', 10)
+        self.sub_goal_reached = self.create_subscription(Bool, '/Controller/msg', self.listener_callback2, 10)
+        self.sub_goal_reached
         timer_period = 0.1  # seconds
-        self.timer_map = self.create_timer(timer_period, self.timer_callback)
-        #self.timer_path = self.create_timer(0.3, self.path_callback)
+        # self.timer_map = self.create_timer(timer_period, self.timer_callback)
+        # self.timer_path = self.create_timer(0.3, self.path_callback)
 
         # Setup Lidar
         self.lidar = LidarX2("/dev/ttyUSB0")
@@ -61,20 +62,55 @@ class SAM(Node):
         # Setup Robot
         self.pose = [0.001, -0.15, np.pi/2]  # x, y, theta
         self.vel = [0.0, 0.0, 0.0]  # dx, dy, dtheta
-        self.goal = [0.1, 0.1]  # x, y
+        self.goal = [None, None]  # x, y
         self.loops = False # Single run only
         
         #Functions
         self.dist_2_goal = _points = lambda pose, goal: abs(math.dist(pose, goal))
 
         # Parameters
-        self.turn = 0 #FR, BR, BL, FL: Count of obstacles within body length in range
+        self.turn = [0, 0, 0, 0, 0] #0, FR, BR, BL, FL: Count of obstacles within body length in range
+        self.goal_reached = True
 
     def update_goal(self, msg):
-        self.goal[0] = msg.pose.position.x
-        self.goal[1] = msg.pose.position.y
-        print('update goal', self.goal)
-        #self.timer_callback()
+        print('msg', msg)
+        if msg.pose.position.x == 100:
+            print('*Hacker voice, Im in', self.goal)
+            if self.goal == [None, None]: # goal was reset(ie achieved)
+                # No goal, start search
+                self.timer_callback() # Map update
+                # calculate next goal using self.turn
+                m_vals = {self.turn[i]:i for i in range(len(self.turn))}  
+                direction = m_vals[min(m_vals.keys())]
+                new_ang = 0
+                dist_from_robot = 0.25
+                if direction == 1:
+                    new_ang = - np.pi/4
+                elif direction == 2:
+                    new_ang = np.pi/4
+                elif direction == 3:
+                    new_ang = np.pi/4 + np.pi/2
+                else:
+                    new_ang = -np.pi/2
+                angle_world = self.pose[2] + new_ang
+                x = dist_from_robot * np.cos(angle_world) + self.pose[0]
+                y = dist_from_robot * np.sin(angle_world) + self.pose[1]
+                self.goal = [x,y]
+                print(f'NO GOAL -- -\ndirection: {direction}\ngoal: {self.goal}\nquads: {self.turn}') 
+
+                self.path_callback() # pub path
+        else:
+            self.goal[0] = msg.pose.position.x
+            self.goal[1] = msg.pose.position.y
+            print('update goal', self.goal)
+            self.timer_callback()
+            self.path_callback() # pub path
+
+    def listener_callback2(self, msg):
+        print('RESET GOAL')
+        self.goal = [None, None]
+        self.goal_reached = True
+
     def update_odom(self, msg):
         '''
         odom['x'] = 0
@@ -91,14 +127,10 @@ class SAM(Node):
     def timer_callback(self):#, msg):
         #if msg and self.loops == False: #only run if msg == True
         print('Waypoint reached, waiting 10.1s')
-        # time.sleep(10)
         t_0 = time.time()
         self.get_map()
         self.publish_map()
-        # input('Save map?')
-        # np.save('map_1.npy', self.m)
         print('time: map: {:.5}'.format(time.time() - t_0))
-        # self.path_callback()
         self.loops = True
             
     def path_callback(self):
@@ -112,7 +144,7 @@ class SAM(Node):
         lidar_measurements = self.lidar.getMeasures()
         # Reset map for each iteration
         new_m = np.full((self.map_size, self.map_size), 0.0)
-        quadrants = [0, 0, 0, 0]
+        quadrants = [0, 0, 0, 0, 0]
         if len(lidar_measurements) > 0:
             distances = []
             for point in lidar_measurements:
@@ -120,13 +152,13 @@ class SAM(Node):
                 if new_dist > self.min_distance:
                     if new_dist < 0.3:
                         if point.angle < 90:
-                            quadrants[0] += 1
-                        elif point.angle < 180:
-                            quadrants[1] += 1
-                        elif point.angle < 270:
-                            quadrants[2] += 1
-                        else:
                             quadrants[3] += 1
+                        elif point.angle < 180:
+                            quadrants[2] += 1
+                        elif point.angle < 270:
+                            quadrants[1] += 1
+                        else:
+                            quadrants[4] += 1
                     # 2 legs forward, offset = 0, 1 leg forward, offset = 180
                     offset = 90 # Sets the correct orientation of lidar wrt to the robot
                     new_angle = -(offset + point.angle)* np.pi / 180
@@ -150,10 +182,7 @@ class SAM(Node):
             self.m[self.m == 100] = None
             # Quadrant process
             print('Quadrants: ', quadrants)
-            if sum(quadrants) > 15:
-                self.turn = -1 if sum(quadrants[:2]) > sum(quadrants[-2:]) else 1
-            else:
-                self.turn = 0
+            self.turn = quadrants
             
     def get_path(self):
         # fix for translation
@@ -162,11 +191,7 @@ class SAM(Node):
         pixel_x, pixel_y = self.pose_to_pixel([self.goal[0], self.goal[1]]) # + body_offset])
         origin_x, origin_y = self.pose_to_pixel([self.pose[0], self.pose[1]]) # + body_offset])
         print('Origins: ',origin_x, origin_y, pixel_x, pixel_y, ' || ', self.map_dimension/self.map_resolution)
-        self.m[pixel_x, pixel_y] = int(5)
-        self.m[pixel_x, pixel_y+1] = int(5)
-        self.m[pixel_x+1, pixel_y] = int(5)
-        self.m[pixel_x, pixel_y-1] = int(5)
-        self.m[pixel_x-1, pixel_y] = int(5)
+        self.m[pixel_x - 1: pixel_x + 1, pixel_y - 1: pixel_y + 1] = int(5)
         self.m[origin_x, origin_y] = int(5)
         map_arr = self.m
         print('Map value', map_arr[pixel_x, pixel_y])
@@ -223,7 +248,7 @@ class SAM(Node):
         msg.data = [int(i) for i in data]
         self.pub_map.publish(msg)
 
-        msg = Int16()
+        msg = Int32MultiArray()
         msg.data = self.turn
         self.pub_turn.publish(msg)
 

@@ -7,7 +7,7 @@ import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Path, Odometry
 from geometry_msgs.msg import PoseStamped
-from std_msgs.msg import Int16, Bool
+from std_msgs.msg import Int16, Bool, Int32MultiArray
 
 
 # Script imports
@@ -38,8 +38,6 @@ class CONTROLLER(Node):
         self.sub_odom  # prevent unused variable warning
         self.sub_map = self.create_subscription(Path, '/SAM/path', self.get_path, 10)
         self.sub_map
-        # self.sub_turn = self.create_subscription(Int16, '/SAM/turn', self.turn_callback, 10)
-        # self.sub_turn
         self.sub_goal = self.create_subscription(PoseStamped, '/Controller/goal', self.get_goal, 10)
         self.sub_goal
         self.sub_bearing_goal = self.create_subscription(PoseStamped, '/Bearing/goal', self.get_goal, 10)
@@ -64,7 +62,6 @@ class CONTROLLER(Node):
         self.min_angle = self.max_angle * 0.5  # Maximum offset angle from goal after correction
         self.look_ahead = 0.4 # How far ahead to look before finding a waypoint
         self.i = 0
-        self.turn = 0
         self.goal_reached = True #first goal is the current location
         self.begin = False
         self.waiting = 0
@@ -75,9 +72,6 @@ class CONTROLLER(Node):
         msg.data = self.goal_reached
         self.publisher_1.publish(msg)
 
-    def turn_callback(self, msg):
-        self.turn = msg.data
-        
     def read_waypoints(self, msg):
         self.waypoints = []
         for waypoint in msg.poses:
@@ -99,9 +93,9 @@ class CONTROLLER(Node):
         self.waiting = 0
         self.goal = [msg.pose.position.x, msg.pose.position.y]
         print('Updated Goal: ', self.goal)
-        if not self.begin:
-            input('Welcome to aLpha Bot, are you ready to fuk shit up?')
-            self.begin = True
+        #if not self.begin:
+        #input('Welcome to aLpha Bot, are you ready to fuk shit up?')
+        self.begin = True
 
 
     def main(self):
@@ -137,7 +131,8 @@ class CONTROLLER(Node):
                 self.goal_reached = True
                 # Destination reached
                 if self.begin and self.waiting > 0 and time.time() - self.waiting > 1:
-                    self.drive(ang_to_rotate=1, value=0.001)
+                    #self.drive(ang_to_rotate=1, value=0.001)
+                    pass
                 else:
                     print('Goal achieved')
                     self.drive(0, 0)  # Stops robot
@@ -167,8 +162,6 @@ class CONTROLLER(Node):
     def drive(self, ang_to_rotate=0, value=0.5):
         curve = 0.0
         direction = np.sign(ang_to_rotate)
-        if self.turn != 0 and abs(ang_to_rotate) > 1.5 and self.turn != direction:
-            direction = direction *-1
         if value == 0:
             # Stop the robot
             self.motor_left.stop()
