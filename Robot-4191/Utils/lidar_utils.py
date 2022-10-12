@@ -55,7 +55,7 @@ def pad_map(arr, map_value = 0, pad_value=20, null_value=1, min_blob=2):
         h_0.extend([[j[0] + np.sign(j[0]), j[1] + np.sign(j[1])] for j in heuristic])
     h_0.extend([[0,-1], [0,1], [0, 2], [0, -2], [0, 3], [0, -3]])#, [1,1], [-1, -1], [0, -4], [0, 4], [0, 5], [0, -5], [-2, -2], [2, 2], [-3, -3], [4, 4], [-4, -4], [-5, -5], [5, 5], [-6, -6]])
 
-    print(h_0)
+    # print(h_0)
     structure = np.array([
         [0, 1, 0],
         [1, 1, 1],
@@ -69,12 +69,7 @@ def pad_map(arr, map_value = 0, pad_value=20, null_value=1, min_blob=2):
         if len(mask) > min_blob:
             for point in mask:
                 # pad out using heuristic
-                for j in h_0:
-                    new_index = np.add(point, j)
-                    if (new_index[0] < size and new_index[1] < size) and (
-                            arr[new_index[0], new_index[1]] != null_value) and (arr[new_index[0], new_index[1]] != pad_value):
-                        # pad
-                        arr[new_index[0], new_index[1]] = int(pad_val)#/euclidian(j))
+                arr[point[0] - pad_value:point[0] + pad_value, point[1] - pad_value:point[1] + pad_value] = int(null_value)
         else:
             for point in mask:
                 arr[point] = map_value

@@ -58,13 +58,12 @@ class CONTROLLER(Node):
 
         # Params
         self.dist_from_goal = 0.05
-        self.max_angle = np.pi / 18  # Maximum offset angle from goal before correction
+        self.max_angle = np.pi / 15  # Maximum offset angle from goal before correction
         self.min_angle = self.max_angle * 0.5  # Maximum offset angle from goal after correction
         self.look_ahead = 0.4 # How far ahead to look before finding a waypoint
         self.i = 0
         self.goal_reached = True #first goal is the current location
         self.begin = False
-        self.waiting = 0
 
     def publish_message(self):
         #message turns to True when goal_reached is True
@@ -90,12 +89,12 @@ class CONTROLLER(Node):
 
 
     def get_goal(self, msg):
-        self.waiting = 0
         self.goal = [msg.pose.position.x, msg.pose.position.y]
         print('Updated Goal: ', self.goal)
         #if not self.begin:
         #input('Welcome to aLpha Bot, are you ready to fuk shit up?')
         self.begin = True
+        self.goal_reached = False
 
 
     def main(self):
@@ -109,9 +108,6 @@ class CONTROLLER(Node):
         print(self.pose[0], self.pose[1], math.degrees(self.pose[2]))
         print('Dist2Goal: {:.3f} || Ang2Goal: {:.3f}'.format(dist_to_goal, math.degrees(angle_to_rotate)))
         if dist_to_goal > self.dist_from_goal:
-            #ensure camera doesn't look for a new waypoint
-            self.waypoint_reached = False
-            
             # Check if we need to rotate or drive straight
             if (self.state['Turn'] == 0 and abs(angle_to_rotate) > self.max_angle) or self.state['Turn'] == 1:
                 # Drive curvy
@@ -127,19 +123,16 @@ class CONTROLLER(Node):
         else:
             # Goal reached
             if len(self.waypoints) == 1 or len(self.waypoints) == 0:
-                print('waiting', self.waiting)
                 self.goal_reached = True
                 # Destination reached
-                if self.begin and self.waiting > 0 and time.time() - self.waiting > 1:
+                if self.begin:
                     #self.drive(ang_to_rotate=1, value=0.001)
                     pass
                 else:
                     print('Goal achieved')
                     self.drive(0, 0)  # Stops robot
-                    if self.waiting == 0:
+                    if self.goal_reached:
                         self.publish_message()
-                        self.waiting = time.time()
-                print('waiting', self.waiting)
             else:
                 #look for next waypoint
                 self.waypoints.pop(0)

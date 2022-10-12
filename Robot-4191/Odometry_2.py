@@ -65,7 +65,8 @@ class ODOM(Node):
         msg = to_odometry(odom)
         self.publisher_.publish(msg)
         if time.time() - self.t_0 > 0.1:
-            print('X, Y, Th', self.pose)
+            print('X: {:.4f}, Y: {:.4f}, Th: {:.4f}'.format(
+                self.pose[0], self.pose[1], self.pose[2] ))
 
     def get_pose(self):
         x_old = self.pose[0]
@@ -97,7 +98,7 @@ class ODOM(Node):
         self.last_time = time.time()
         self.wheel_left = dist_left
         self.wheel_right = dist_right
-        print((self.wheel_left + self.wheel_right)/2)
+        #print((self.wheel_left + self.wheel_right)/2)
 
 
 def main(args=None):

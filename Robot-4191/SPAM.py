@@ -1,6 +1,6 @@
-import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Int16, Bool, Int32MultiArray
+import rclpy
+from std_msgs.msg import Int16, Bool, Int32MultiArray, Header
 from nav_msgs.msg import Path, OccupancyGrid, Odometry
 from geometry_msgs.msg import Point, Quaternion, Pose, PoseStamped
 import math
@@ -37,6 +37,8 @@ class SAM(Node):
                                                  '/robot/odom', self.update_odom, 10)
         self.pub_map = self.create_publisher(OccupancyGrid, '/SAM/map', 10)
         self.pub_path = self.create_publisher(Path, '/SAM/path', 10)
+        self.pub_goal = self.create_publisher(PoseStamped,
+                                                 '/sam/goal', 10)
         self.pub_turn = self.create_publisher(Int32MultiArray, '/SAM/turn', 10)
         self.sub_goal_reached = self.create_subscription(Bool, '/Controller/msg', self.listener_callback2, 10)
         self.sub_goal_reached
@@ -51,7 +53,7 @@ class SAM(Node):
 
         # Setup map
         self.map_dimension, self.map_resolution = map_dimension, map_resolution
-        self.min_distance = map_min  # distance from the lidar to ignore
+        self.min_distance = 0.05#map_min  # distance from the lidar to ignore
         self.morigin = self.map_dimension / 2.0
         self.map_size = int(self.map_dimension / self.map_resolution)
         self.m = np.ones((self.map_size, self.map_size), dtype = int)
@@ -73,38 +75,45 @@ class SAM(Node):
         self.goal_reached = True
 
     def update_goal(self, msg):
-        print('msg', msg)
-        if msg.pose.position.x == 100:
-            print('*Hacker voice, Im in', self.goal)
-            if self.goal == [None, None]: # goal was reset(ie achieved)
-                # No goal, start search
-                self.timer_callback() # Map update
-                # calculate next goal using self.turn
-                m_vals = {self.turn[i]:i for i in range(len(self.turn))}  
-                direction = m_vals[min(m_vals.keys())]
-                new_ang = 0
-                dist_from_robot = 0.25
-                if direction == 1:
-                    new_ang = - np.pi/4
-                elif direction == 2:
-                    new_ang = np.pi/4
-                elif direction == 3:
-                    new_ang = np.pi/4 + np.pi/2
-                else:
-                    new_ang = -np.pi/2
-                angle_world = self.pose[2] + new_ang
-                x = dist_from_robot * np.cos(angle_world) + self.pose[0]
-                y = dist_from_robot * np.sin(angle_world) + self.pose[1]
-                self.goal = [x,y]
-                print(f'NO GOAL -- -\ndirection: {direction}\ngoal: {self.goal}\nquads: {self.turn}') 
+        print('Update Goal:', self.goal, msg.pose.position.x, self.goal_reached)
+        if float(msg.pose.position.x) == float(100):
+            # No goal, start search
+            self.turn = self.turn[1:]
+            # calculate next goal using self.turn
+            m_vals = {self.turn[i]:i for i in range(len(self.turn))}  
+            direction = m_vals[min(m_vals.keys())]
+            print('*Hacker voice, Im in', self.goal, self.turn)
+            time.sleep(0.5)
+            #0 : FL 
+            #1 : FR 
+            #2 : BR 
+            #3 : 
+            # BL:np.pi - np.pi/4
+            # BR: np.pi + np.pi/4
+            # FR: - np.pi/4
+            # FL: np.pi/4
+            new_ang = 0
+            dist_from_robot = 0.25
+            if direction == 0: 
+                new_ang =  np.pi/4 # back right?
+            elif direction == 1:
+                new_ang = - np.pi/4
+            elif direction == 2: # behind
+                new_ang = np.pi + np.pi/4
+            else:
+                new_ang = np.pi - np.pi/4  # back left?
+            angle_world = self.pose[2] + new_ang
+            x = dist_from_robot * np.cos(angle_world) + self.pose[0]
+            y = dist_from_robot * np.sin(angle_world) + self.pose[1]
+            #if self.goal == [None, None]: # goal was reset(ie achieved)
+            self.goal = [x,y]
 
-                self.path_callback() # pub path
+            print(f'NO GOAL -- -\ndirection: {direction}\ngoal: {self.goal}\nquads: {self.turn}') 
         else:
             self.goal[0] = msg.pose.position.x
             self.goal[1] = msg.pose.position.y
             print('update goal', self.goal)
-            self.timer_callback()
-            self.path_callback() # pub path
+        self.timer_callback()
 
     def listener_callback2(self, msg):
         print('RESET GOAL')
@@ -126,7 +135,6 @@ class SAM(Node):
 
     def timer_callback(self):#, msg):
         #if msg and self.loops == False: #only run if msg == True
-        print('Waypoint reached, waiting 10.1s')
         t_0 = time.time()
         self.get_map()
         self.publish_map()
@@ -150,7 +158,7 @@ class SAM(Node):
             for point in lidar_measurements:
                 new_dist = 0.001 * point.distance
                 if new_dist > self.min_distance:
-                    if new_dist < 0.3:
+                    if new_dist < 0.5:
                         if point.angle < 90:
                             quadrants[3] += 1
                         elif point.angle < 180:
@@ -176,8 +184,8 @@ class SAM(Node):
                         new_m[x_map, y_map] = 100
             # Add padding to points
             map_value = 5
-            pad_value = 99
-            self.m = pad_map(new_m, map_value=map_value, pad_value=pad_value, null_value=100, min_blob=3)
+            pad_value = 1
+            self.m = new_m#pad_map(new_m, map_value=map_value, pad_value=pad_value, null_value=100, min_blob=3)
             self.m[self.m == 0.0] = map_value
             self.m[self.m == 100] = None
             # Quadrant process
@@ -251,6 +259,20 @@ class SAM(Node):
         msg = Int32MultiArray()
         msg.data = self.turn
         self.pub_turn.publish(msg)
+        print('GOAL------', self.goal)
+        if self.goal[0] != None:
+            print('GOAL------', self.goal)
+            self.goal_pub()
+
+    def goal_pub(self):
+        # message turns to True when waypoint_reached is True
+        msg = PoseStamped()
+        msg.header = Header()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.pose.position.x = self.goal[0]
+        msg.pose.position.y = self.goal[1]
+        self.pub_goal.publish(msg)
+
 
 
 def main(args=None):

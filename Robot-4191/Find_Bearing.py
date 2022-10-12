@@ -108,7 +108,7 @@ class FIND_BEARING(Node):
         self.focal_length = self.camera_matrix[0][0]
         self.half_image_width = self.camera_matrix[0][2]
         self.true_bearing_height = 0.019 # 19mm
-        self.goal = [0, 0]
+        self.goal = [None, None]
     
         #self.countdown = 0
 
@@ -237,6 +237,7 @@ class FIND_BEARING(Node):
             if self.goal_reached:
                 self.goal = [100., 100.]
                 self.goal_pub()
+                print('pub lost', self.goal_reached)
 
             return 0
         bearing_height_img = 2*bearing_radius
@@ -256,11 +257,11 @@ class FIND_BEARING(Node):
         bearing_pose = [x, y]
         # check if new goal is similar to old goal
         min_dist = 0.1
-        if self.goal == None:
+        if self.goal == None or self.goal == [None, None]:
             dist_between_goal = 100
         else:
             dist_between_goal =  math.dist(bearing_pose,self.goal) 
-        if dist_between_goal < min_dist or self.goal == None:
+        if dist_between_goal < min_dist or self.goal == None or self.goal == [100, 100] or self.goal == [None, None]:
             self.goal = bearing_pose
             print('goal',self.goal)
             self.image_pub(frame)
