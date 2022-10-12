@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Int16, Bool, Int32MultiArray
+from std_msgs.msg import Int16, Bool, Int32MultiArray, Header
 from nav_msgs.msg import Path, OccupancyGrid, Odometry
 from geometry_msgs.msg import Point, Quaternion, Pose, PoseStamped
 import math
@@ -28,7 +28,6 @@ Written by Aidan Pritchard
 
 
 class SAM(Node):
-
     def __init__(self):
         super().__init__('sam')
         self.sub_goal = self.create_subscription(PoseStamped,
@@ -36,7 +35,7 @@ class SAM(Node):
         self.sub_pose = self.create_subscription(Odometry,
                                                  '/robot/odom', self.update_odom, 10)
         self.pub_map = self.create_publisher(OccupancyGrid, '/SAM/map', 10)
-        self.pub_path = self.create_publisher(Path, '/SAM/path', 10)
+        self.pub_goal = self.create_publisher(PoseStamped,'/sam/goal', 10)
         self.pub_turn = self.create_publisher(Int32MultiArray, '/SAM/turn', 10)
         self.sub_goal_reached = self.create_subscription(Bool, '/Controller/msg', self.listener_callback2, 10)
         self.sub_goal_reached
@@ -72,6 +71,14 @@ class SAM(Node):
         self.turn = [0, 0, 0, 0, 0] #0, FR, BR, BL, FL: Count of obstacles within body length in range
         self.goal_reached = True
 
+    def goal_pub(self):
+        # message turns to True when waypoint_reached is True
+        msg = PoseStamped()
+        msg.header = Header()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.pose.position.x = self.goal[0]
+        msg.pose.position.y = self.goal[1]
+        self.pub_goal.publish(msg)
     def update_goal(self, msg):
         print('msg', msg)
         if msg.pose.position.x == 100:
@@ -97,14 +104,11 @@ class SAM(Node):
                 y = dist_from_robot * np.sin(angle_world) + self.pose[1]
                 self.goal = [x,y]
                 print(f'NO GOAL -- -\ndirection: {direction}\ngoal: {self.goal}\nquads: {self.turn}') 
-
-                self.path_callback() # pub path
         else:
             self.goal[0] = msg.pose.position.x
             self.goal[1] = msg.pose.position.y
             print('update goal', self.goal)
             self.timer_callback()
-            self.path_callback() # pub path
 
     def listener_callback2(self, msg):
         print('RESET GOAL')
@@ -133,12 +137,7 @@ class SAM(Node):
         print('time: map: {:.5}'.format(time.time() - t_0))
         self.loops = True
             
-    def path_callback(self):
-        dist =  self.dist_2_goal(self.pose[:2], self.goal) 
-        print('================', dist)
-        if dist > 0.1:
-            print('++++++++++==update_path')
-            self.get_path()
+
     def get_map(self, padding=True):
         # heuristic = [0.001 * self.min_distance, 0, -0.001 * self.min_distance]
         lidar_measurements = self.lidar.getMeasures()
@@ -184,29 +183,7 @@ class SAM(Node):
             print('Quadrants: ', quadrants)
             self.turn = quadrants
             
-    def get_path(self):
-        # fix for translation
-        print('G/P:', self.goal, self.pose)
-        body_offset = 0.1
-        pixel_x, pixel_y = self.pose_to_pixel([self.goal[0], self.goal[1]]) # + body_offset])
-        origin_x, origin_y = self.pose_to_pixel([self.pose[0], self.pose[1]]) # + body_offset])
-        print('Origins: ',origin_x, origin_y, pixel_x, pixel_y, ' || ', self.map_dimension/self.map_resolution)
-        self.m[pixel_x - 1: pixel_x + 1, pixel_y - 1: pixel_y + 1] = int(5)
-        self.m[origin_x, origin_y] = int(5)
-        map_arr = self.m
-        print('Map value', map_arr[pixel_x, pixel_y])
-        print('pose value: ', map_arr[origin_x, origin_y])
-        astar = Astar(map_arr)
-        waypoints = np.array(astar.run((origin_x, origin_y),(pixel_x, pixel_y)))
-        # waypoints = np.array(pyastar2d.astar_path(np.float32(map_arr),(pixel_x, pixel_y),(origin_x, origin_y) ))#, allow_diagonal=True), dtype=np.float32)
 
-        print('Waypoint shape: ', waypoints.shape)
-        if len(waypoints.shape) ==  2:
-            self.generate_path(waypoints)
-            self.pub_path.publish(self.path)
-        else:
-            print('Invalid path')
-            return 0
 
     def pose_to_pixel(self, pose):
         # pose maps from - map_dimension : map_dimension
@@ -220,20 +197,6 @@ class SAM(Node):
         pose_x = map(pixel[0], 0, (self.map_dimension/self.map_resolution)-1, self.morigin + self.pose[0], -self.morigin + self.pose[0])
         pose_y = map(pixel[1], 0, (self.map_dimension/self.map_resolution)-1, self.morigin + self.pose[1], -self.morigin + self.pose[1])
         return pose_x, pose_y
-
-    def generate_path(self, waypoints):
-        new_path = Path()
-        new_path.header.frame_id = 'map'
-        for i in range(waypoints.shape[0]):
-            way = self.pixel_to_pose(waypoints[i])
-            pose_stamped = PoseStamped()
-            pose_stamped.header.frame_id = 'map'
-            pose_stamped.pose.position.x = float(way[0])
-            pose_stamped.pose.position.y = float(way[1])
-            pose_stamped.pose.position.z = float(0.0)
-
-            new_path.poses.append(pose_stamped)
-        self.path = new_path
 
     def publish_map(self):
         msg = OccupancyGrid()
@@ -251,6 +214,9 @@ class SAM(Node):
         msg = Int32MultiArray()
         msg.data = self.turn
         self.pub_turn.publish(msg)
+        self.goal_pub()
+
+
 
 
 def main(args=None):

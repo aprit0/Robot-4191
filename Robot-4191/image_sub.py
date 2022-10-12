@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 from std_msgs.msg import Int16MultiArray
 import matplotlib.pyplot as plt
+import time
 
 
 class MinimalSubscriber(Node):
@@ -19,12 +20,14 @@ class MinimalSubscriber(Node):
         self.subscription  # prevent unused variable warning
 
     def listener_callback(self, msg):
+        print('hi')
+        plt.close()
         frame = msg.data
         frame = np.reshape(frame,(480, 640, 3))
         frame = np.rot90(frame, 2)
         plt.imshow(frame)
         plt.show()
-
+        time.sleep(1)
 
 def main(args=None):
     rclpy.init(args=args)
