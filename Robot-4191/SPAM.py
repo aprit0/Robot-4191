@@ -1,8 +1,5 @@
 from rclpy.node import Node
-<<<<<<< HEAD
 import rclpy
-=======
->>>>>>> 71feb1b32c814c77d17c7eabb591e2f17e3d3019
 from std_msgs.msg import Int16, Bool, Int32MultiArray, Header
 from nav_msgs.msg import Path, OccupancyGrid, Odometry
 from geometry_msgs.msg import Point, Quaternion, Pose, PoseStamped
@@ -38,13 +35,9 @@ class SAM(Node):
         self.sub_pose = self.create_subscription(Odometry,
                                                  '/robot/odom', self.update_odom, 10)
         self.pub_map = self.create_publisher(OccupancyGrid, '/SAM/map', 10)
-<<<<<<< HEAD
         self.pub_path = self.create_publisher(Path, '/SAM/path', 10)
         self.pub_goal = self.create_publisher(PoseStamped,
                                                  '/sam/goal', 10)
-=======
-        self.pub_goal = self.create_publisher(PoseStamped,'/sam/goal', 10)
->>>>>>> 71feb1b32c814c77d17c7eabb591e2f17e3d3019
         self.pub_turn = self.create_publisher(Int32MultiArray, '/SAM/turn', 10)
         self.sub_goal_reached = self.create_subscription(Bool, '/Controller/msg', self.listener_callback2, 10)
         self.sub_goal_reached
@@ -149,16 +142,11 @@ class SAM(Node):
                 y = dist_from_robot * np.sin(angle_world) + self.pose[1]
                 self.goal = [x,y]
                 print(f'NO GOAL -- -\ndirection: {direction}\ngoal: {self.goal}\nquads: {self.turn}') 
->>>>>>> 71feb1b32c814c77d17c7eabb591e2f17e3d3019
         else:
             self.goal[0] = msg.pose.position.x
             self.goal[1] = msg.pose.position.y
             print('update goal', self.goal)
-<<<<<<< HEAD
         self.timer_callback()
-=======
-            self.timer_callback()
->>>>>>> 71feb1b32c814c77d17c7eabb591e2f17e3d3019
 
     def listener_callback2(self, msg):
         print('RESET GOAL')
@@ -277,10 +265,6 @@ class SAM(Node):
         msg.pose.position.x = self.goal[0]
         msg.pose.position.y = self.goal[1]
         self.pub_goal.publish(msg)
-=======
-        self.goal_pub()
-
->>>>>>> 71feb1b32c814c77d17c7eabb591e2f17e3d3019
 
 
 
