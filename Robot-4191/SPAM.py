@@ -82,7 +82,6 @@ class SAM(Node):
         msg.pose.position.y = self.goal[1]
         self.pub_goal.publish(msg)
     def update_goal(self, msg):
-<<<<<<< HEAD
         print('Update Goal:', self.goal, msg.pose.position.x, self.goal_reached)
         if float(msg.pose.position.x) == float(100):
             # No goal, start search
@@ -117,31 +116,6 @@ class SAM(Node):
             self.goal = [x,y]
 
             print(f'NO GOAL -- -\ndirection: {direction}\ngoal: {self.goal}\nquads: {self.turn}') 
-=======
-        print('msg', msg)
-        if msg.pose.position.x == 100:
-            print('*Hacker voice, Im in', self.goal)
-            if self.goal == [None, None]: # goal was reset(ie achieved)
-                # No goal, start search
-                self.timer_callback() # Map update
-                # calculate next goal using self.turn
-                m_vals = {self.turn[i]:i for i in range(len(self.turn))}  
-                direction = m_vals[min(m_vals.keys())]
-                new_ang = 0
-                dist_from_robot = 0.25
-                if direction == 1:
-                    new_ang = - np.pi/4
-                elif direction == 2:
-                    new_ang = np.pi/4
-                elif direction == 3:
-                    new_ang = np.pi/4 + np.pi/2
-                else:
-                    new_ang = -np.pi/2
-                angle_world = self.pose[2] + new_ang
-                x = dist_from_robot * np.cos(angle_world) + self.pose[0]
-                y = dist_from_robot * np.sin(angle_world) + self.pose[1]
-                self.goal = [x,y]
-                print(f'NO GOAL -- -\ndirection: {direction}\ngoal: {self.goal}\nquads: {self.turn}') 
         else:
             self.goal[0] = msg.pose.position.x
             self.goal[1] = msg.pose.position.y
@@ -247,11 +221,6 @@ class SAM(Node):
         data[np.isnan(data)] = 100
         msg.data = [int(i) for i in data]
         self.pub_map.publish(msg)
-
-        msg = Int32MultiArray()
-        msg.data = self.turn
-        self.pub_turn.publish(msg)
-<<<<<<< HEAD
         print('GOAL------', self.goal)
         if self.goal[0] != None:
             print('GOAL------', self.goal)

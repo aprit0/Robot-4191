@@ -80,7 +80,7 @@ class FIND_BEARING(Node):
         self.pub_img = self.create_publisher(Int16MultiArray, 'video_frames', 10)
         #self.timer = self.create_timer(0.001, self.image_pub)
         #run main
-        self.timer = self.create_timer(0.1, self.main)
+        self.timer = self.create_timer(0.05, self.main)
         # Subscriptions
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback1, 10)
         self.sub_odom  # prevent unused variable warning
@@ -108,7 +108,9 @@ class FIND_BEARING(Node):
         self.focal_length = self.camera_matrix[0][0]
         self.half_image_width = self.camera_matrix[0][2]
         self.true_bearing_height = 0.019 # 19mm
-        self.goal = [None, None]
+        self.goal = [0, 0]
+        self.last_goal = time.time()
+        self.goal_timeout = 2
     
         #self.countdown = 0
 
@@ -123,8 +125,7 @@ class FIND_BEARING(Node):
         # collect all in one drive
         # not sure which method is best as I dont know how wide the camera view is, but pls output values
         # for a single bearing
-
-        for i in range(10):
+        for i in range(5):
             # 1. take photo
             ret, frame = self.cap.read()
         # 2. save current odom and servo angles
@@ -132,7 +133,6 @@ class FIND_BEARING(Node):
 
         # do the camera crap
         circles = locate_bearings(frame)
-        print(circles)
         try:
             circles = circles[0]
         except:
@@ -142,7 +142,6 @@ class FIND_BEARING(Node):
             pixel_location = False
             bearing_radius = False
         else:
-            print('circles', circles)
            # circle = circles[0] # double array
             circle = circles
             pixel_location = circle[0] #x only
@@ -151,7 +150,6 @@ class FIND_BEARING(Node):
             y = 480 - circle[1]
             r = bearing_radius
             cv2.circle(frame,(int(x), int(y)), int(r),(255,0,255), 2)
-
 
         return frame, pixel_location, bearing_radius
     
@@ -181,7 +179,6 @@ class FIND_BEARING(Node):
     def listener_callback2(self, msg):
         print('I heard: ',msg)
         if msg:
-            self.goal = None
             self.goal_reached = True
 
     def goal_pub(self):
@@ -228,15 +225,13 @@ class FIND_BEARING(Node):
             print('False')
             return 0
         
-        print('Searching')
         # find the pixel location and size
         frame, pixel_location, bearing_radius = self.camera()
         # break out of function if there are no bearings in the image
         if not pixel_location:
-            print('we there yet', self.goal_reached)
             if self.goal_reached:
-                self.goal = [100., 100.]
-                self.goal_pub()
+                #self.goal = [100., 100.]
+                #self.goal_pub()
                 print('pub lost', self.goal_reached)
 
             return 0
@@ -257,14 +252,15 @@ class FIND_BEARING(Node):
         bearing_pose = [x, y]
         # check if new goal is similar to old goal
         min_dist = 0.1
-        if self.goal == None or self.goal == [None, None]:
-            dist_between_goal = 100
-        else:
-            dist_between_goal =  math.dist(bearing_pose,self.goal) 
-        if dist_between_goal < min_dist or self.goal == None or self.goal == [100, 100] or self.goal == [None, None]:
-            self.goal = bearing_pose
+        dist_between_goal =  math.dist(bearing_pose,self.goal) 
+        print('pre:',self.goal, bearing_pose)
+        
+        if dist_between_goal < min_dist or self.goal == [100, 100]:
+            if time.time() - self.last_goal > self.goal_timeout or bearing_pose != [100, 100]:
+                self.goal = bearing_pose
+                self.last_goal = time.time()
             print('goal',self.goal)
-            self.image_pub(frame)
+            #self.image_pub(frame)
             # publish the waypoint
             self.goal_pub()
             
