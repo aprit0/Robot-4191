@@ -63,7 +63,7 @@ class SAM(Node):
         # Setup Robot
         self.pose = [0.001, -0.15, np.pi/2]  # x, y, theta
         self.vel = [0.0, 0.0, 0.0]  # dx, dy, dtheta
-        self.goal = [None, None]  # x, y
+        self.goal = [0., 0.]  # x, y
         self.loops = False # Single run only
         
         #Functions
@@ -71,7 +71,7 @@ class SAM(Node):
 
         # Parameters
         self.turn = [0, 0, 0, 0, 0] #0, FR, BR, BL, FL: Count of obstacles within body length in range
-        self.goal_reached = True
+        self.goal_reached = False
 
     def goal_pub(self):
         # message turns to True when waypoint_reached is True
@@ -82,15 +82,24 @@ class SAM(Node):
         msg.pose.position.y = self.goal[1]
         self.pub_goal.publish(msg)
     def update_goal(self, msg):
-        print('Update Goal:', self.goal, msg.pose.position.x, self.goal_reached)
-        if float(msg.pose.position.x) == float(100):
+        self.get_map()
+        print('Update Goal:', self.goal, msg.pose.position.x, self.goal_reached, self.turn)
+        self.turn = self.turn[1:]
+        if msg.pose.position.x < 90:
+            self.goal[0] = msg.pose.position.x
+            self.goal[1] = msg.pose.position.y
+            print('Received ball bearing', self.goal)
+        if self.turn[0] + self.turn[1] > 50:
+            print('Drop goal')
+            self.goal = [None, None]
+        print('Update Goal:', self.goal, msg.pose.position.x, self.goal_reached, self.turn)
+        if self.goal_reached == True or self.goal == [None, None]:
             # No goal, start search
-            self.turn = self.turn[1:]
             # calculate next goal using self.turn
             m_vals = {self.turn[i]:i for i in range(len(self.turn))}  
             direction = m_vals[min(m_vals.keys())]
             print('*Hacker voice, Im in', self.goal, self.turn)
-            time.sleep(0.5)
+            time.sleep(0.2)
             #0 : FL 
             #1 : FR 
             #2 : BR 
@@ -100,7 +109,7 @@ class SAM(Node):
             # FR: - np.pi/4
             # FL: np.pi/4
             new_ang = 0
-            dist_from_robot = 0.25
+            dist_from_robot = 0.3
             if direction == 0: 
                 new_ang =  np.pi/4 # back right?
             elif direction == 1:
@@ -114,18 +123,20 @@ class SAM(Node):
             y = dist_from_robot * np.sin(angle_world) + self.pose[1]
             #if self.goal == [None, None]: # goal was reset(ie achieved)
             self.goal = [x,y]
-
-            print(f'NO GOAL -- -\ndirection: {direction}\ngoal: {self.goal}\nquads: {self.turn}') 
+            print(f'GOAL: {self.goal_reached}\ndirection: {direction}\ngoal: {self.goal}\nquads: {self.turn}') 
+            self.goal_reached = False
+        elif self.goal_reached == False and self.goal == [None, None]:
+            pass
         else:
-            self.goal[0] = msg.pose.position.x
-            self.goal[1] = msg.pose.position.y
-            print('update goal', self.goal)
+            pass
+        print('sending goal: ', self.goal)
         self.timer_callback()
 
     def listener_callback2(self, msg):
-        print('RESET GOAL')
-        self.goal = [None, None]
-        self.goal_reached = True
+        self.goal_reached = msg.data
+        if self.goal_reached == True:
+            self.goal = [None, None]
+            print('RESET GOAL', self.goal_reached)
 
     def update_odom(self, msg):
         '''
@@ -143,14 +154,12 @@ class SAM(Node):
     def timer_callback(self):#, msg):
         #if msg and self.loops == False: #only run if msg == True
         t_0 = time.time()
-        self.get_map()
         self.publish_map()
         print('time: map: {:.5}'.format(time.time() - t_0))
         self.loops = True
             
 
     def get_map(self, padding=True):
-        # heuristic = [0.001 * self.min_distance, 0, -0.001 * self.min_distance]
         lidar_measurements = self.lidar.getMeasures()
         # Reset map for each iteration
         new_m = np.full((self.map_size, self.map_size), 0.0)
@@ -160,7 +169,7 @@ class SAM(Node):
             for point in lidar_measurements:
                 new_dist = 0.001 * point.distance
                 if new_dist > self.min_distance:
-                    if new_dist < 0.5:
+                    if new_dist < 0.35:
                         if point.angle < 90:
                             quadrants[3] += 1
                         elif point.angle < 180:
@@ -186,12 +195,12 @@ class SAM(Node):
                         new_m[x_map, y_map] = 100
             # Add padding to points
             map_value = 5
-            pad_value = 1
-            self.m = new_m#pad_map(new_m, map_value=map_value, pad_value=pad_value, null_value=100, min_blob=3)
+            pad_value = 8
+            self.m = pad_map(new_m, map_value=map_value, pad_value=pad_value, null_value=100, min_blob=2)
             self.m[self.m == 0.0] = map_value
             self.m[self.m == 100] = None
             # Quadrant process
-            print('Quadrants: ', quadrants)
+            print('Quadrants: ', quadrants, np.unique(self.m))
             self.turn = quadrants
             
 
@@ -222,9 +231,7 @@ class SAM(Node):
         msg.data = [int(i) for i in data]
         self.pub_map.publish(msg)
         print('GOAL------', self.goal)
-        if self.goal[0] != None:
-            print('GOAL------', self.goal)
-            self.goal_pub()
+        self.goal_pub()
 
     def goal_pub(self):
         # message turns to True when waypoint_reached is True

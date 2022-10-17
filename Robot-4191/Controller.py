@@ -30,8 +30,6 @@ class CONTROLLER(Node):
         super().__init__('controller')
         #Publish that first waypoint has been reached
         self.publisher_1 = self.create_publisher(Bool, '/Controller/msg', 10)
-        #timer_period = 0.05  # 0.05 seconds
-        #self.timer = self.create_timer(timer_period, self.publish_message)
 
         # Instantiate objects
         self.sub_odom = self.create_subscription(Odometry, '/robot/odom', self.listener_callback, 10)
@@ -64,6 +62,8 @@ class CONTROLLER(Node):
         self.i = 0
         self.goal_reached = True #first goal is the current location
         self.begin = False
+        self.goal_pub_timer = 0
+        self.goal_timeout = time.time()
 
     def publish_message(self):
         #message turns to True when goal_reached is True
@@ -95,6 +95,7 @@ class CONTROLLER(Node):
         #input('Welcome to aLpha Bot, are you ready to fuk shit up?')
         self.begin = True
         self.goal_reached = False
+        self.publish_message()
 
 
     def main(self):
@@ -107,7 +108,7 @@ class CONTROLLER(Node):
         dist_to_goal = self.dist_between_points(self.pose[:2], self.goal)
         print(self.pose[0], self.pose[1], math.degrees(self.pose[2]))
         print('Dist2Goal: {:.3f} || Ang2Goal: {:.3f}'.format(dist_to_goal, math.degrees(angle_to_rotate)))
-        if dist_to_goal > self.dist_from_goal:
+        if dist_to_goal > self.dist_from_goal and time.time() - self.goal_timeout < 10:
             # Check if we need to rotate or drive straight
             if (self.state['Turn'] == 0 and abs(angle_to_rotate) > self.max_angle) or self.state['Turn'] == 1:
                 # Drive curvy
@@ -123,16 +124,30 @@ class CONTROLLER(Node):
         else:
             # Goal reached
             if len(self.waypoints) == 1 or len(self.waypoints) == 0:
-                self.goal_reached = True
+                self.goal_timeout = time.time()
                 # Destination reached
                 if self.begin:
                     #self.drive(ang_to_rotate=1, value=0.001)
                     pass
                 else:
-                    print('Goal achieved')
                     self.drive(0, 0)  # Stops robot
                     if self.goal_reached:
+                        # second time through
+                        self.goal_pub_timer = time.time()
+                        self.goal_reached = False
+                    elif time.time() - self.goal_pub_timer < 0.5:
+                        self.goal_reached = False
+                        # second to many times through
                         self.publish_message()
+                    elif time.time() - self.goal_pub_timer < 1:
+                        # second to many times through
+                        self.goal_reached = False
+                        self.publish_message()
+                    else:
+                        # first time/reset through
+                        self.goal_reached = True
+                        self.publish_message()
+                    print('Goal achieved', self.goal, self.goal_reached, time.time() - self.goal_pub_timer)
             else:
                 #look for next waypoint
                 self.waypoints.pop(0)
@@ -155,6 +170,7 @@ class CONTROLLER(Node):
     def drive(self, ang_to_rotate=0, value=0.5):
         curve = 0.0
         direction = np.sign(ang_to_rotate)
+        #return 0
         if value == 0:
             # Stop the robot
             self.motor_left.stop()

@@ -93,8 +93,8 @@ class FIND_BEARING(Node):
         self.servo = AngularServo(13, min_angle=-90, max_angle=90)
         self.servo_angle = 0  # servo value when images are taken
         #self.servo_control()
-        self.pose = [0., 0., 0.] # odometry subscription
-        self.robot_pose = [0., 0., 0.] # robot pose when images are taken
+        self.pose = [None, None, None] # odometry subscription
+        self.robot_pose = [None, None, None] # robot pose when images are taken
         self.goal_reached = True
 
         # Constants
@@ -105,12 +105,13 @@ class FIND_BEARING(Node):
         pixel_size = (3.6736*10**(-3))/pixel_width #meters
         f = (3.04*10**(-3))/pixel_size #pixels
         self.camera_matrix = [[f, 0, x], [0, f, y], [0, 0, 1]] 
-        self.focal_length = self.camera_matrix[0][0]
+        self.focal_length = f
         self.half_image_width = self.camera_matrix[0][2]
         self.true_bearing_height = 0.019 # 19mm
         self.goal = [0, 0]
         self.last_goal = time.time()
         self.goal_timeout = 2
+        self.goal_seen = False
     
         #self.countdown = 0
 
@@ -174,12 +175,14 @@ class FIND_BEARING(Node):
         
     def listener_callback1(self, msg):
         odom = from_odometry(msg)
+        print('New odom')
         self.pose = [odom['x'], odom['y'], odom['theta']]
 
     def listener_callback2(self, msg):
         print('I heard: ',msg)
-        if msg:
-            self.goal_reached = True
+        self.goal_reached = msg.data
+        if self.goal_reached == True:
+            self.goal_seen = False
 
     def goal_pub(self):
         # message turns to True when waypoint_reached is True
@@ -220,49 +223,50 @@ class FIND_BEARING(Node):
         if goal not reached and goal not found:
         - return 0
         """
-        #only run if the goal is reached
-        if not self.goal_reached:
-            print('False')
+        if self.pose[0] == None:
             return 0
         
         # find the pixel location and size
         frame, pixel_location, bearing_radius = self.camera()
         # break out of function if there are no bearings in the image
-        if not pixel_location:
-            if self.goal_reached:
-                #self.goal = [100., 100.]
-                #self.goal_pub()
-                print('pub lost', self.goal_reached)
-
+        if not pixel_location and not self.goal_seen:
+            self.goal = [100., 100.]
+            self.goal_pub()
+            print('lost no bearing', self.goal_reached, time.time())
+            self.goal_reached = False
             return 0
+        elif not pixel_location:
+            print('previous seen bearing', self.goal_reached, time.time())
+            self.goal_pub()
+            return 0
+        else:
+            pass
         bearing_height_img = 2*bearing_radius
-
         # find the pixel angle wrt center of camera image
         pixel_angle = np.arctan((self.half_image_width - pixel_location) / self.focal_length)  # if negative, to the right of center, else to the left
 
         # total angle wrt the world
-        angle_world = self.robot_pose[2] + self.servo_angle + pixel_angle
+        angle_world = self.robot_pose[2] + pixel_angle
         # check the sign for servo_bearing, could be negative
 
-        offset_dist = 0.15
+        offset_dist = 0.0
         dist_from_robot = ((self.focal_length * self.true_bearing_height) / bearing_height_img) + offset_dist
         x = dist_from_robot * np.cos(angle_world) + self.robot_pose[0]
         y = dist_from_robot * np.sin(angle_world) + self.robot_pose[1]
 
         bearing_pose = [x, y]
+        bearing_pose = [x, y]
         # check if new goal is similar to old goal
-        min_dist = 0.1
-        dist_between_goal =  math.dist(bearing_pose,self.goal) 
+        min_dist = 1
         print('pre:',self.goal, bearing_pose)
+        dist_between_goal =  math.dist(bearing_pose,self.goal) 
         
-        if dist_between_goal < min_dist or self.goal == [100, 100]:
-            if time.time() - self.last_goal > self.goal_timeout or bearing_pose != [100, 100]:
-                self.goal = bearing_pose
-                self.last_goal = time.time()
-            print('goal',self.goal)
+        if (dist_between_goal < min_dist or self.goal == [100, 100]) and not self.goal_seen:
+            self.goal = bearing_pose
             #self.image_pub(frame)
             # publish the waypoint
             self.goal_pub()
+            self.goal_seen = True
             
             #don't run main again until the next goal is reached
             # lol no

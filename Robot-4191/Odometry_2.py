@@ -51,8 +51,6 @@ class ODOM(Node):
         self.counter = 0
         self.t_0 = time.time()
 
-        self.pose[0] = float(input('X (default: 0) = ') or 0)
-        self.pose[1] = float(input('Y (default: 0) = ') or 0)
 
     def timer_callback(self):
         self.get_pose()

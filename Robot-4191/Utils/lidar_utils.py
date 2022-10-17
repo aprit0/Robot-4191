@@ -47,15 +47,8 @@ def euclidian(input):
 
 def pad_map(arr, map_value = 0, pad_value=20, null_value=1, min_blob=2):
     pad_val = pad_value
-    pixel_pad = 7 # number of pixels to pad
+    pixel_pad = 1 # number of pixels to pad
     size = arr.shape[0]
-    heuristic = [[1,0], [-1, 0]]#[[1, 0], [0, 1], [-1, 0], [0, -1]] #+ [[1,1], [1,-1], [-1,1], [-1,-1]]
-    h_0 = heuristic
-    for i in range(1, pixel_pad):
-        h_0.extend([[j[0] + np.sign(j[0]), j[1] + np.sign(j[1])] for j in heuristic])
-    h_0.extend([[0,-1], [0,1], [0, 2], [0, -2], [0, 3], [0, -3]])#, [1,1], [-1, -1], [0, -4], [0, 4], [0, 5], [0, -5], [-2, -2], [2, 2], [-3, -3], [4, 4], [-4, -4], [-5, -5], [5, 5], [-6, -6]])
-
-    # print(h_0)
     structure = np.array([
         [0, 1, 0],
         [1, 1, 1],
@@ -69,7 +62,17 @@ def pad_map(arr, map_value = 0, pad_value=20, null_value=1, min_blob=2):
         if len(mask) > min_blob:
             for point in mask:
                 # pad out using heuristic
-                arr[point[0] - pad_value:point[0] + pad_value, point[1] - pad_value:point[1] + pad_value] = int(null_value)
+                arr[point[0] - pad_value:point[0] + pad_value, point[1] - pad_value:point[1] + pad_value] = int(pad_value)
+        else:
+            for point in mask:
+                arr[point] = map_value
+    for i in range(1, n_blob + 1):
+        mask = np.ma.where(i == labeled)
+        mask = list(zip(mask[0], mask[1]))
+        if len(mask) > min_blob:
+            for point in mask:
+                # pad out using heuristic
+                arr[point[0], point[1]] = int(null_value)
         else:
             for point in mask:
                 arr[point] = map_value
